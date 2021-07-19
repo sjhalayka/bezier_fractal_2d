@@ -409,7 +409,7 @@ void get_points(size_t res)
 
 	 get_isosurface(
 		x_grid_max,
-		100,
+		1000,
 		C,
 		max_iterations,
 		threshold);
@@ -638,7 +638,39 @@ void display_func(void)
 
 
 
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+	glEnable(GL_LIGHT2);
+	glEnable(GL_LIGHT3);
+	glEnable(GL_LIGHT4);
+	glEnable(GL_LIGHT5);
 
+	glEnable(GL_ALPHA);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mesh_transparent);
+
+	glBegin(GL_TRIANGLES);
+
+	for (size_t i = 0; i < tris.size(); i++)
+	{
+		size_t v_index0 = tris[i].vertex[0].index;
+		size_t v_index1 = tris[i].vertex[1].index;
+		size_t v_index2 = tris[i].vertex[2].index;
+
+		glNormal3f(vertex_normals[v_index0].x, vertex_normals[v_index0].y, vertex_normals[v_index0].z);
+		glVertex3f(vertices[v_index0].x, vertices[v_index0].y, vertices[v_index0].z);
+		glNormal3f(vertex_normals[v_index1].x, vertex_normals[v_index1].y, vertex_normals[v_index1].z);
+		glVertex3f(vertices[v_index1].x, vertices[v_index1].y, vertices[v_index1].z);
+		glNormal3f(vertex_normals[v_index2].x, vertex_normals[v_index2].y, vertex_normals[v_index2].z);
+		glVertex3f(vertices[v_index2].x, vertices[v_index2].y, vertices[v_index2].z);
+	}
+
+	glEnd();
+
+	glDisable(GL_BLEND);
 
 	if(true == draw_outline)
 	{
@@ -725,39 +757,7 @@ void display_func(void)
 
 
 
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-	glEnable(GL_LIGHT1);
-	glEnable(GL_LIGHT2);
-	glEnable(GL_LIGHT3);
-	glEnable(GL_LIGHT4);
-	glEnable(GL_LIGHT5);
 
-	glEnable(GL_ALPHA);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, mesh_transparent);
-
-	glBegin(GL_TRIANGLES);
-
-	for (size_t i = 0; i < tris.size(); i++)
-	{
-		size_t v_index0 = tris[i].vertex[0].index;
-		size_t v_index1 = tris[i].vertex[1].index;
-		size_t v_index2 = tris[i].vertex[2].index;
-
-		glNormal3f(vertex_normals[v_index0].x, vertex_normals[v_index0].y, vertex_normals[v_index0].z);
-		glVertex3f(vertices[v_index0].x, vertices[v_index0].y, vertices[v_index0].z);
-		glNormal3f(vertex_normals[v_index1].x, vertex_normals[v_index1].y, vertex_normals[v_index1].z);
-		glVertex3f(vertices[v_index1].x, vertices[v_index1].y, vertices[v_index1].z);
-		glNormal3f(vertex_normals[v_index2].x, vertex_normals[v_index2].y, vertex_normals[v_index2].z);
-		glVertex3f(vertices[v_index2].x, vertices[v_index2].y, vertices[v_index2].z);
-	}
-
-	glEnd();
-
-	glDisable(GL_BLEND);
 
 
 	if (false == screenshot_mode)
