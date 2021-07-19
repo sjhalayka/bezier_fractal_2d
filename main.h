@@ -273,11 +273,13 @@ void get_isosurface(
 		for (size_t y = 0; y < y_res; y++, Z += y_step_size)
 		{
 			image[x_res * y + x] = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
+			//image[x_res * y + x] = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
 
-			if (image[x_res * y + x] > threshold)
-				image[x_res * y + x] = threshold;
 
-			image[x_res * y + x] /= threshold;
+			if (image[x_res * y + x] > threshold*2.0f)
+				image[x_res * y + x] = threshold*2.0f;
+
+			image[x_res * y + x] /= 2.0f * threshold;
 			image[x_res * y + x] = 1 - image[x_res * y + x];
 		}
 	}
@@ -289,13 +291,13 @@ void get_isosurface(
 	cout << endl;
 
 	double grid_x_pos = x_grid_min; // Start at minimum x.
-	double grid_y_pos = grid_max; // Start at maximum y.
+	double grid_y_pos = y_grid_min; // Start at maximum y.
 
 	float step_size = (grid_max - x_grid_min) / static_cast<double>(res - 1);
 
 
 	// Begin march.
-	for (short unsigned int y = 0; y < (y_res - 1); y++, grid_y_pos -= step_size, grid_x_pos = x_grid_min)
+	for (short unsigned int y = 0; y < (y_res - 1); y++, grid_y_pos += step_size, grid_x_pos = x_grid_min)
 	{
 		for (short unsigned int x = 0; x < (x_res - 1); x++, grid_x_pos += step_size)
 		{
@@ -374,6 +376,7 @@ void get_points(size_t res)
 		for (size_t y = 0; y < y_res; y++, Z += y_step_size)
 		{
 			float magnitude = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
+			//float magnitude = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
 
 			if (magnitude < threshold)
 			{
