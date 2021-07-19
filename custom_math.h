@@ -179,6 +179,7 @@ public:
 		}
 	}
 
+
 	void make_Vy_zero(void)
 	{
 		if(U.y > 0.0 - epsilon && U.y < 0.0 + epsilon)

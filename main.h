@@ -13,6 +13,10 @@
 #include "custom_math.h"
 using namespace custom_math;
 
+#include "primitives.h"
+
+#include "marching_squares.h"
+
 #include <fstream>
 using std::ofstream;
 
@@ -29,7 +33,8 @@ using std::mt19937;
 #include <complex>
 using namespace std;
 
-
+#include <set>
+using std::set;
 
 
 size_t point_res = 25;
@@ -42,7 +47,7 @@ float outline_width = 3.0;
 static const float outline_colour[] = {0.0, 0.0, 0.0};
 
 bool draw_curves = true;
-bool draw_mesh = false;
+bool draw_mesh = true;
 bool draw_outline = true;
 bool draw_axis = true;
 bool draw_control_list = true;
@@ -89,26 +94,13 @@ vector<vector<vector_4>> pos;
 
 
 
-// https://stackoverflow.com/questions/785097/how-do-i-implement-a-bézier-curve-in-c
-vector_4 getBezierPoint(vector<vector_4> points, float t)
-{
-	size_t i = points.size() - 1;
+vector<triangle> tris;
+vector<vertex_3> face_normals;
+vector<vertex_3> vertices;
+vector<vertex_3> vertex_normals;
 
-	while (i > 0)
-	{
-		for (size_t k = 0; k < i; k++)
-		{
-			points[k].x += t * (points[k + 1].x - points[k].x);
-			points[k].y += t * (points[k + 1].y - points[k].y);
-			points[k].z += t * (points[k + 1].z - points[k].z);
-			points[k].w += t * (points[k + 1].w - points[k].w);
-		}
-
-		i--;
-	}
-
-	return points[0];
-}
+float mesh_transparent[] = { 0.0f, 0.5f, 1.0f, 0.2f };
+float mesh_solid[] = { 0.0f, 0.5f, 1.0f, 1.0f };
 
 
 
@@ -162,6 +154,194 @@ float iterate_2d(vector< complex<float> >& trajectory_points,
 
 	return abs(Z);
 }
+
+
+
+
+void get_vertices_and_normals_from_triangles(vector<triangle>& t, vector<vertex_3>& fn, vector<vertex_3>& v, vector<vertex_3>& vn)
+{
+	fn.clear();
+	v.clear();
+	vn.clear();
+
+	if (0 == t.size())
+		return;
+
+	cout << "Triangles: " << t.size() << endl;
+
+	cout << "Welding vertices" << endl;
+
+	// Insert unique vertices into set.
+	set<vertex_3> vertex_set;
+
+	for (vector<triangle>::const_iterator i = t.begin(); i != t.end(); i++)
+	{
+		vertex_set.insert(i->vertex[0]);
+		vertex_set.insert(i->vertex[1]);
+		vertex_set.insert(i->vertex[2]);
+	}
+
+	cout << "Vertices: " << vertex_set.size() << endl;
+
+	cout << "Generating vertex indices" << endl;
+
+	// Add indices to the vertices.
+	for (set<vertex_3>::const_iterator i = vertex_set.begin(); i != vertex_set.end(); i++)
+	{
+		size_t index = v.size();
+		v.push_back(*i);
+		v[index].index = index;
+	}
+
+	vertex_set.clear();
+
+	// Re-insert modifies vertices into set.
+	for (vector<vertex_3>::const_iterator i = v.begin(); i != v.end(); i++)
+		vertex_set.insert(*i);
+
+	cout << "Assigning vertex indices to triangles" << endl;
+
+	// Find the three vertices for each triangle, by index.
+	set<vertex_3>::iterator find_iter;
+
+	for (vector<triangle>::iterator i = t.begin(); i != t.end(); i++)
+	{
+		find_iter = vertex_set.find(i->vertex[0]);
+		i->vertex[0].index = find_iter->index;
+
+		find_iter = vertex_set.find(i->vertex[1]);
+		i->vertex[1].index = find_iter->index;
+
+		find_iter = vertex_set.find(i->vertex[2]);
+		i->vertex[2].index = find_iter->index;
+	}
+
+	vertex_set.clear();
+
+	cout << "Calculating normals" << endl;
+	fn.resize(t.size());
+	vn.resize(v.size());
+
+	for (size_t i = 0; i < t.size(); i++)
+	{
+		vertex_3 v0 = t[i].vertex[1] - t[i].vertex[0];
+		vertex_3 v1 = t[i].vertex[2] - t[i].vertex[0];
+		fn[i] = v0.cross(v1);
+		fn[i].normalize();
+
+		vn[t[i].vertex[0].index] = vn[t[i].vertex[0].index] + fn[i];
+		vn[t[i].vertex[1].index] = vn[t[i].vertex[1].index] + fn[i];
+		vn[t[i].vertex[2].index] = vn[t[i].vertex[2].index] + fn[i];
+	}
+
+	for (size_t i = 0; i < vn.size(); i++)
+		vn[i].normalize();
+}
+
+
+
+void get_isosurface(
+	const float grid_max,
+	const size_t res,
+	const complex<float> C,
+	const unsigned short int max_iterations,
+	const float threshold)
+{
+	tris.clear();
+	face_normals.clear();
+	vertices.clear();
+	vertex_normals.clear();
+
+	vector<float> image(res*res, 0);
+
+	const float x_grid_min = -grid_max;
+	const size_t x_res = res;
+	const complex<float> x_step_size((grid_max - x_grid_min) / (x_res - 1), 0);
+
+	const float y_grid_min = -grid_max;
+	const size_t y_res = res;
+	const complex<float> y_step_size(0, (grid_max - y_grid_min) / (y_res - 1));
+
+	complex<float> Z(x_grid_min, y_grid_min);
+
+	vector< complex<float> > trajectory_points;
+
+	for (size_t x = 0; x < x_res; x++, Z += x_step_size)
+	{
+		Z = complex<float>(Z.real(), y_grid_min);
+
+		for (size_t y = 0; y < y_res; y++, Z += y_step_size)
+		{
+			image[x_res * y + x] = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
+
+			if (image[x_res * y + x] > threshold)
+				image[x_res * y + x] = threshold;
+
+			image[x_res * y + x] /= threshold;
+			image[x_res * y + x] = 1 - image[x_res * y + x];
+		}
+	}
+
+
+	grid_square g;
+
+	cout << "Generating geometric primitives..." << endl;
+	cout << endl;
+
+	double grid_x_pos = x_grid_min; // Start at minimum x.
+	double grid_y_pos = grid_max; // Start at maximum y.
+
+	float step_size = (grid_max - x_grid_min) / static_cast<double>(res - 1);
+
+
+	// Begin march.
+	for (short unsigned int y = 0; y < (y_res - 1); y++, grid_y_pos -= step_size, grid_x_pos = x_grid_min)
+	{
+		for (short unsigned int x = 0; x < (x_res - 1); x++, grid_x_pos += step_size)
+		{
+			// Corner vertex order: 03
+			//                      12
+			// e.g.: clockwise, as in OpenGL
+			g.vertex[0] = vertex_3(grid_x_pos, grid_y_pos, 0, 0);
+			g.vertex[1] = vertex_3(grid_x_pos, grid_y_pos - step_size, 0, 0);
+			g.vertex[2] = vertex_3(grid_x_pos + step_size, grid_y_pos - step_size, 0, 0);
+			g.vertex[3] = vertex_3(grid_x_pos + step_size, grid_y_pos, 0, 0);
+
+			g.value[0] = image[y * x_res + x];
+			g.value[1] = image[(y + 1) * x_res + x];
+			g.value[2] = image[(y + 1) * x_res + (x + 1)];
+			g.value[3] = image[y * x_res + (x + 1)];
+
+			g.generate_primitives(tris, 0.5F);
+		}
+	}
+
+	get_vertices_and_normals_from_triangles(tris, face_normals, vertices, vertex_normals);
+
+}
+
+
+// https://stackoverflow.com/questions/785097/how-do-i-implement-a-bézier-curve-in-c
+vector_4 getBezierPoint(vector<vector_4> points, float t)
+{
+	size_t i = points.size() - 1;
+
+	while (i > 0)
+	{
+		for (size_t k = 0; k < i; k++)
+		{
+			points[k].x += t * (points[k + 1].x - points[k].x);
+			points[k].y += t * (points[k + 1].y - points[k].y);
+			points[k].z += t * (points[k + 1].z - points[k].z);
+			points[k].w += t * (points[k + 1].w - points[k].w);
+		}
+
+		i--;
+	}
+
+	return points[0];
+}
+
 
 
 void get_points(size_t res)
@@ -225,6 +405,16 @@ void get_points(size_t res)
 
 		pos.push_back(p);
 	}
+
+
+	 get_isosurface(
+		x_grid_max,
+		100,
+		C,
+		max_iterations,
+		threshold);
+
+
 
 }
 
@@ -532,6 +722,9 @@ void display_func(void)
 
 	glEnable(GL_DEPTH_TEST);
 
+
+
+
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 	glEnable(GL_LIGHT1);
@@ -540,6 +733,31 @@ void display_func(void)
 	glEnable(GL_LIGHT4);
 	glEnable(GL_LIGHT5);
 
+	glEnable(GL_ALPHA);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mesh_transparent);
+
+	glBegin(GL_TRIANGLES);
+
+	for (size_t i = 0; i < tris.size(); i++)
+	{
+		size_t v_index0 = tris[i].vertex[0].index;
+		size_t v_index1 = tris[i].vertex[1].index;
+		size_t v_index2 = tris[i].vertex[2].index;
+
+		glNormal3f(vertex_normals[v_index0].x, vertex_normals[v_index0].y, vertex_normals[v_index0].z);
+		glVertex3f(vertices[v_index0].x, vertices[v_index0].y, vertices[v_index0].z);
+		glNormal3f(vertex_normals[v_index1].x, vertex_normals[v_index1].y, vertex_normals[v_index1].z);
+		glVertex3f(vertices[v_index1].x, vertices[v_index1].y, vertices[v_index1].z);
+		glNormal3f(vertex_normals[v_index2].x, vertex_normals[v_index2].y, vertex_normals[v_index2].z);
+		glVertex3f(vertices[v_index2].x, vertices[v_index2].y, vertices[v_index2].z);
+	}
+
+	glEnd();
+
+	glDisable(GL_BLEND);
 
 
 	if (false == screenshot_mode)
@@ -877,7 +1095,6 @@ void draw_objects(bool disable_colouring)
 		}
 
 		
-
 
 
 
