@@ -118,7 +118,9 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
-		Z = Z * Z + C;
+
+		Z = pow(Z, 2);
+		Z += C;
 
 		trajectory_points.push_back(Z);
 
@@ -144,7 +146,8 @@ float iterate_2d(vector< complex<float> >& trajectory_points,
 
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
-		Z = Z * Z + C;
+		Z = pow(Z, 2);
+		Z += C;
 
 		trajectory_points.push_back(Z);
 
@@ -272,8 +275,8 @@ void get_isosurface(
 
 		for (size_t y = 0; y < y_res; y++, Z += y_step_size)
 		{
-			//image[x_res * y + x] = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
-			image[x_res * y + x] = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
+			image[x_res * y + x] = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
+			//image[x_res * y + x] = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
 
 
 			if (image[x_res * y + x] > threshold*2.0f)
@@ -362,7 +365,7 @@ void get_points(size_t res)
 	const complex<float> y_step_size(0, (y_grid_max - y_grid_min) / (y_res - 1));
 
 	const complex<float> C(0.2f, 0.5f);
-	const unsigned short int max_iterations = 8;
+	const unsigned short int max_iterations = 32;
 	const float threshold = 4.0f;
 
 	complex<float> Z(x_grid_min, y_grid_min);
@@ -375,8 +378,8 @@ void get_points(size_t res)
 
 		for (size_t y = 0; y < y_res; y++, Z += y_step_size)
 		{
-			//float magnitude = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
-			float magnitude = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
+			float magnitude = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
+			//float magnitude = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
 
 			if (magnitude < threshold)
 			{
@@ -394,6 +397,34 @@ void get_points(size_t res)
 			}
 		}
 	}
+
+
+	cout << "trajectory count " << all_4d_points.size() << endl;
+
+	size_t orbit_count = 0;
+
+	for (size_t i = 0; i < all_4d_points.size(); i++)
+	{
+		set<vector_4> point_set;
+
+		for (size_t j = 0; j < all_4d_points[i].size(); j++)
+		{
+			point_set.insert(all_4d_points[i][j]);
+		}
+
+		if (point_set.size() != all_4d_points[i].size())
+		{
+			cout << point_set.size() << endl;
+			orbit_count++;
+		}
+	}
+
+	cout << "orbit count " << orbit_count << endl;
+
+
+
+
+
 
 	for (size_t i = 0; i < all_4d_points.size(); i++)
 	{
