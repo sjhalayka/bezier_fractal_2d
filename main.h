@@ -37,7 +37,7 @@ using namespace std;
 using std::set;
 
 
-size_t point_res = 25;
+size_t point_res = 10;
 
 
 
@@ -272,8 +272,8 @@ void get_isosurface(
 
 		for (size_t y = 0; y < y_res; y++, Z += y_step_size)
 		{
-			image[x_res * y + x] = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
-			//image[x_res * y + x] = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
+			//image[x_res * y + x] = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
+			image[x_res * y + x] = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
 
 
 			if (image[x_res * y + x] > threshold*2.0f)
@@ -375,10 +375,10 @@ void get_points(size_t res)
 
 		for (size_t y = 0; y < y_res; y++, Z += y_step_size)
 		{
-			float magnitude = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
-			//float magnitude = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
+			//float magnitude = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
+			float magnitude = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
 
-			if (magnitude < threshold)
+			if (magnitude >= threshold)
 			{
 				vector<vector_4> v;
 
@@ -399,7 +399,7 @@ void get_points(size_t res)
 	{
 		vector<vector_4> p;
 
-		for (float t = 0; t <= 1.0f; t += 0.01f)
+		for (float t = 0; t <= 0.2f; t += 0.01f)
 		//for (float t = 0; t <= 0.85f; t += 0.01f)
 		{
 			vector_4 v = getBezierPoint(all_4d_points[i], t);
@@ -414,7 +414,7 @@ void get_points(size_t res)
 		x_grid_max,
 		1000,
 		C,
-		max_iterations,
+		128,
 		threshold);
 
 
