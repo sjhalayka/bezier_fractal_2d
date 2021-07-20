@@ -378,7 +378,7 @@ void get_points(size_t res)
 			//float magnitude = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
 			float magnitude = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
 
-			if (magnitude >= threshold)
+			if (magnitude < threshold)
 			{
 				vector<vector_4> v;
 
@@ -414,7 +414,7 @@ void get_points(size_t res)
 		x_grid_max,
 		1000,
 		C,
-		128,
+		max_iterations,
 		threshold);
 
 
