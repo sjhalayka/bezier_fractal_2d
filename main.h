@@ -110,6 +110,29 @@ float mesh_solid[] = { 0.0f, 0.5f, 1.0f, 1.0f };
 
 
 
+complex<float> pow_complex(const complex<float>& in, const float beta)
+{
+
+
+	float self_dot = in.real() * in.real() + in.imag() * in.imag();
+
+	if (self_dot == 0)
+	{
+		//qOut->x = 0;
+//		qOut->y = 0;
+	//	qOut->z = 0;
+		//qOut->w = 0;
+
+		return complex<float>(0, 0);
+	}
+
+	float len = std::sqrtf(self_dot);
+	float self_dot_beta = std::powf(self_dot, beta / 2.0f);
+
+	return complex<float>(
+		self_dot_beta * std::cos(beta * std::acos(in.real() / len)),
+		in.imag() * self_dot_beta * std::sin(beta * std::acos(in.real() / len)) / sqrtf(in.imag() * in.imag()));
+}
 
 float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 	complex<float> Z,
@@ -126,7 +149,7 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
-		Z = pow(Z, exponent);
+		Z = pow_complex(Z, exponent);
 		Z += C;
 
 		trajectory_points.push_back(Z);
@@ -137,7 +160,6 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 
 	return abs(Z);
 }
-
 
 
 
@@ -155,7 +177,7 @@ float iterate_julia_2d(vector< complex<float> >& trajectory_points,
 
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
-		Z = pow(Z, exponent);
+		Z = pow_complex(Z, exponent);
 		Z += C;
 
 		trajectory_points.push_back(Z);
