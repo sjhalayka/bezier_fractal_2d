@@ -40,6 +40,12 @@ using std::set;
 size_t point_res = 10;
 
 
+float grid_max = 1.5;
+complex<float> C(0.2, 0.5);
+unsigned short int max_iterations = 8;
+float threshold = 4.0;
+float beta = 2.0f;
+bool mandelbrot_mode = FALSE;
 
 vector_3 background_colour(1.0, 1.0, 1.0);
 
@@ -86,7 +92,7 @@ void passive_motion_func(int x, int y);
 void draw_objects(bool disable_colouring = false);
 
 
-
+	
 
 vector<vector<vector_4>> all_4d_points;
 vector<vector<vector_4>> pos;
@@ -104,11 +110,13 @@ float mesh_solid[] = { 0.0f, 0.5f, 1.0f, 1.0f };
 
 
 
+
 float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 	complex<float> Z,
 	complex<float> C,
 	const short unsigned int max_iterations,
-	const float threshold)
+	const float threshold,
+	const float exponent)
 {
 	C = Z;
 	Z = complex<float>(0, 0);
@@ -118,8 +126,7 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
-
-		Z = pow(Z, 2);
+		Z = pow(Z, exponent);
 		Z += C;
 
 		trajectory_points.push_back(Z);
@@ -135,18 +142,20 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 
 
 
-float iterate_2d(vector< complex<float> >& trajectory_points,
+
+float iterate_julia_2d(vector< complex<float> >& trajectory_points,
 	complex<float> Z,
 	const complex<float> C,
 	const short unsigned int max_iterations,
-	const float threshold)
+	const float threshold,
+	const float exponent)
 {
 	trajectory_points.clear();
 	trajectory_points.push_back(Z);
 
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
-		Z = pow(Z, 2);
+		Z = pow(Z, exponent);
 		Z += C;
 
 		trajectory_points.push_back(Z);
@@ -159,7 +168,36 @@ float iterate_2d(vector< complex<float> >& trajectory_points,
 }
 
 
+float iterate_2d(bool mandelbrot,
+	vector< complex<float> >& trajectory_points,
+	complex<float> Z,
+	const complex<float> C,
+	const short unsigned int max_iterations,
+	const float threshold,
+	const float exponent)
+{
+	if (mandelbrot)
+	{
+		return iterate_mandelbrot_2d(
+			trajectory_points,
+			Z,
+			C,
+			max_iterations,
+			threshold,
+			exponent);
+	}
+	else
+	{
+		return iterate_julia_2d(
+			trajectory_points,
+			Z,
+			C,
+			max_iterations,
+			threshold,
+			exponent);
+	}
 
+}
 
 void get_vertices_and_normals_from_triangles(vector<triangle>& t, vector<vertex_3>& fn, vector<vertex_3>& v, vector<vertex_3>& vn)
 {
@@ -244,11 +282,13 @@ void get_vertices_and_normals_from_triangles(vector<triangle>& t, vector<vertex_
 
 
 void get_isosurface(
+	const bool mandelbrot,
 	const float grid_max,
 	const size_t res,
 	const complex<float> C,
 	const unsigned short int max_iterations,
-	const float threshold)
+	const float threshold,
+	const float exponent)
 {
 	tris.clear();
 	face_normals.clear();
@@ -275,9 +315,7 @@ void get_isosurface(
 
 		for (size_t y = 0; y < y_res; y++, Z += y_step_size)
 		{
-			image[x_res * y + x] = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
-			//image[x_res * y + x] = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
-
+			image[x_res * y + x] = iterate_2d(mandelbrot, trajectory_points, Z, C, max_iterations, threshold, exponent);
 
 			if (image[x_res * y + x] > threshold*2.0f)
 				image[x_res * y + x] = threshold*2.0f;
@@ -349,24 +387,27 @@ vector_4 getBezierPoint(vector<vector_4> points, float t)
 
 
 
-void get_points(size_t res)
+void get_points(
+	const bool mandelbrot,
+	const float grid_max,
+	const size_t res,
+	const complex<float> C,
+	const unsigned short int max_iterations,
+	const float threshold,
+const float exponent)
 {
 	all_4d_points.clear();
 	pos.clear();
 
-	const float x_grid_max = 1.5;
+	const float x_grid_max = grid_max;
 	const float x_grid_min = -x_grid_max;
 	const size_t x_res = res;
 	const complex<float> x_step_size((x_grid_max - x_grid_min) / (x_res - 1), 0);
 
-	const float y_grid_max = 1.5;
+	const float y_grid_max = grid_max;
 	const float y_grid_min = -y_grid_max;
 	const size_t y_res = res;
 	const complex<float> y_step_size(0, (y_grid_max - y_grid_min) / (y_res - 1));
-
-	const complex<float> C(0.2f, 0.5f);
-	const unsigned short int max_iterations = 32;
-	const float threshold = 4.0f;
 
 	complex<float> Z(x_grid_min, y_grid_min);
 
@@ -378,8 +419,7 @@ void get_points(size_t res)
 
 		for (size_t y = 0; y < y_res; y++, Z += y_step_size)
 		{
-			float magnitude = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
-			//float magnitude = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
+			float magnitude = iterate_2d(mandelbrot, trajectory_points, Z, C, max_iterations, threshold, exponent);
 
 			if (magnitude < threshold)
 			{
@@ -442,11 +482,13 @@ void get_points(size_t res)
 
 
 	 get_isosurface(
-		x_grid_max,
+		mandelbrot,
+		grid_max,
 		1000,
 		C,
 		max_iterations,
-		threshold);
+		threshold,
+		exponent);
 
 
 
@@ -454,11 +496,11 @@ void get_points(size_t res)
 
 
 // TODO: fix camera bug where portrait mode crashes.
-void take_screenshot(size_t num_cams_wide, size_t res, const char *filename, const bool reverse_rows = false)
+void take_screenshot(size_t num_cams_wide, const char *filename, const bool reverse_rows = false)
 {
 	screenshot_mode = true;
 
-	get_points(res);
+	//get_points(res);
 
 	// Set up Targa TGA image data.
 	unsigned char  idlength = 0;
@@ -564,7 +606,7 @@ void take_screenshot(size_t num_cams_wide, size_t res, const char *filename, con
 
 	out.write(reinterpret_cast<char *>(&pixel_data[0]), num_bytes);
 
-	get_points(point_res);
+	//get_points(point_res);
 }
 
 void idle_func(void)
@@ -632,7 +674,7 @@ void init_opengl(const int &width, const int &height)
 
 	main_camera.Set(0, 0, camera_w, camera_fov, win_x, win_y, camera_near, camera_far);
 
-	get_points(point_res);
+	get_points(mandelbrot_mode, grid_max, point_res, C, max_iterations, threshold, beta);
 
 }
 
@@ -803,7 +845,7 @@ void display_func(void)
 
 void keyboard_func(unsigned char key, int x, int y)
 {
-	switch(tolower(key))
+	switch (tolower(key))
 	{
 	case 'y':
 	{
@@ -816,35 +858,73 @@ void keyboard_func(unsigned char key, int x, int y)
 		break;
 	}
 	case 'h':
-		{
-			draw_outline = !draw_outline;
-			break;
-		}
+	{
+		draw_outline = !draw_outline;
+		break;
+	}
 	case 'j':
-		{
-			draw_axis = !draw_axis;
-			break;
-		}
+	{
+		draw_axis = !draw_axis;
+		break;
+	}
 	case 'k':
-		{
-			draw_control_list = !draw_control_list;
-			break;
-		}
+	{
+		draw_control_list = !draw_control_list;
+		break;
+	}
 	case 'n':
 	{
-		take_screenshot(8, point_res, "screenshot.tga");
+		get_points(mandelbrot_mode, grid_max, point_res, C, max_iterations, threshold, beta);
+		take_screenshot(8, "screenshot.tga");
+		get_points(mandelbrot_mode, grid_max, point_res, C, max_iterations, threshold, beta);
 		break;
 	}
 	case 'm':
+	{
+		get_points(mandelbrot_mode, grid_max, 50, C, max_iterations, threshold, beta);
+		take_screenshot(8, "screenshot.tga");
+		get_points(mandelbrot_mode, grid_max, point_res, C, max_iterations, threshold, beta);
+		break;
+	}
+	case 'b':
+	{
+		vector<float> betas = { -8, -7, -6, -5, -4, -3, 2, 3, 4, 5, 6, 7, 8 };
+
+		for (size_t i = 0; i < betas.size(); i++)
 		{
-			take_screenshot(8, 50, "screenshot.tga");
-			break;
+			ostringstream oss;
+			oss << betas[i];
+
+			string filename = "julia2d_" + oss.str() + ".tga";
+
+			cout << filename << endl;
+
+			get_points(false, grid_max, 20, C, max_iterations, threshold, betas[i]);
+			take_screenshot(8, filename.c_str());
+		}
+	
+		for (size_t i = 0; i < betas.size(); i++)
+		{
+			ostringstream oss;
+			oss << betas[i];
+
+			string filename = "mandelbrot2d_" + oss.str() + ".tga";
+
+			cout << filename << endl;
+
+			get_points(true, grid_max, 20, C, max_iterations, threshold, betas[i]);
+			take_screenshot(8, filename.c_str());
 		}
 
+		break;
+	}
 	default:
 		break;
 	}
 }
+
+
+
 
 void mouse_func(int button, int state, int x, int y)
 {
