@@ -112,7 +112,7 @@ float mesh_solid[] = { 0.0f, 0.5f, 1.0f, 1.0f };
 
 complex<float> pow_complex(const complex<float>& in, const float beta)
 {
-
+	float fabs_beta = fabsf(beta);
 
 	float self_dot = in.real() * in.real() + in.imag() * in.imag();
 
@@ -127,11 +127,16 @@ complex<float> pow_complex(const complex<float>& in, const float beta)
 	}
 
 	float len = std::sqrtf(self_dot);
-	float self_dot_beta = std::powf(self_dot, beta / 2.0f);
+	float self_dot_beta = std::powf(self_dot, fabs_beta / 2.0f);
 
-	return complex<float>(
-		self_dot_beta * std::cos(beta * std::acos(in.real() / len)),
-		in.imag() * self_dot_beta * std::sin(beta * std::acos(in.real() / len)) / sqrtf(in.imag() * in.imag()));
+	complex<float> out = complex<float>(
+		self_dot_beta * std::cos(fabs_beta * std::acos(in.real() / len)),
+		in.imag() * self_dot_beta * std::sin(fabs_beta * std::acos(in.real() / len)) / sqrtf(in.imag() * in.imag()));
+
+	if (beta < 0)
+		out = conj(out) / powf(abs(out), 2.0f);
+
+	return out;
 }
 
 float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
@@ -610,7 +615,7 @@ void take_screenshot(size_t num_cams_wide, const char *filename, const bool reve
 	if(!out.is_open())
 	{
 		cout << "Failed to open TGA file for writing: " << filename << endl;
-		return;
+		return;	
 	}
 
 	out.write(reinterpret_cast<char *>(&idlength), 1);
@@ -935,7 +940,7 @@ void keyboard_func(unsigned char key, int x, int y)
 			cout << filename << endl;
 
 			get_points(true, grid_max, 20, C, max_iterations, threshold, betas[i]);
-			take_screenshot(8, filename.c_str());
+			take_screenshot(2, filename.c_str());
 		}
 
 		break;
