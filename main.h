@@ -36,13 +36,15 @@ using namespace std;
 #include <set>
 using std::set;
 
+#include <unordered_set>
+using std::unordered_set;
 
 size_t point_res = 10;
 
 
 float grid_max = 1.5;
 complex<float> C(0.2, 0.5);
-unsigned short int max_iterations = 200;
+unsigned short int max_iterations = 2000;
 float threshold = 4.0;
 float beta = 2.0f;
 bool mandelbrot_mode = true;
@@ -120,14 +122,7 @@ complex<float> pow_complex(const complex<float>& in, const float beta)
 	float self_dot = in.real() * in.real() + in.imag() * in.imag();
 
 	if (self_dot == 0)
-	{
-		//qOut->x = 0;
-//		qOut->y = 0;
-	//	qOut->z = 0;
-		//qOut->w = 0;
-
 		return complex<float>(0, 0);
-	}
 
 	float len = std::sqrtf(self_dot);
 	float self_dot_beta = std::powf(self_dot, fabs_beta / 2.0f);
@@ -149,11 +144,11 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 	const float threshold,
 	const float exponent)
 {
-	C = Z;
-	Z = complex<float>(0, 0);
+	C = complex<float>(-0.1258695628494024, 0.7545827310532331);// Z;
+	Z = C;// complex<float>(0, 0);
 
 	trajectory_points.clear();
-//	trajectory_points.push_back(Z);
+	trajectory_points.push_back(Z);
 
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
@@ -374,7 +369,6 @@ void get_isosurface(
 		{
 			// Corner vertex order: 03
 			//                      12
-			// e.g.: clockwise, as in OpenGL
 			g.vertex[0] = vertex_3(grid_x_pos, grid_y_pos, 0, 0);
 			g.vertex[1] = vertex_3(grid_x_pos, grid_y_pos - step_size, 0, 0);
 			g.vertex[2] = vertex_3(grid_x_pos + step_size, grid_y_pos - step_size, 0, 0);
@@ -468,39 +462,6 @@ const float exponent)
 		}
 	}
 
-	//vector<vector_4> new_points;
-
-	//for (size_t i = 0; i < all_4d_points.size(); i++)
-	//{
-	//	new_points.clear();
-
-	//	for (size_t j = 0; j < all_4d_points[i].size(); j++)
-	//	{
-	//		bool found_match = false;
-
-	//		for (size_t k = 0; k < new_points.size(); k++)
-	//		{
-	//			if (new_points[k] == all_4d_points[i][j])
-	//			{
-	//				found_match = true;
-	//				break;
-	//			}
-	//		}
-
-	//		if (found_match == false)
-	//		{
-	//			new_points.push_back(all_4d_points[i][j]);
-	//		}
-	//	}
-
-	//	cout << all_4d_points[i].size() << endl;
-	//	all_4d_points[i] = new_points;
-	//	cout << all_4d_points[i].size() << endl;
-	//	cout << endl;
-	//}
-
-
-	cout << "trajectory count " << all_4d_points.size() << endl;
 
 	size_t orbit_count = 0;
 
@@ -519,9 +480,40 @@ const float exponent)
 			all_4d_points[i].push_back(all_4d_points[i][0]);
 			orbit_count++;
 		}
+
+		cout << all_4d_points[i].size() << " " << point_set.size() << endl;
 	}
 
 	cout << "orbit count " << orbit_count << endl;
+
+
+
+
+
+	for (size_t i = 0; i < all_4d_points.size(); i++)
+	{
+		vector<vector_4> new_points;
+
+		for (size_t j = 0; j < all_4d_points[i].size(); j++)
+			if (std::find(new_points.begin(), new_points.end(), all_4d_points[i][j]) == new_points.end())
+			{
+				cout << all_4d_points[i][j].x << " " << all_4d_points[i][j].y << endl;
+				new_points.push_back(all_4d_points[i][j]);
+			}
+
+		cout << endl;
+		cout << endl;
+
+		cout << all_4d_points[i].size() << endl;
+		all_4d_points[i] = new_points;
+		cout << all_4d_points[i].size() << endl;
+		cout << endl;
+	}
+
+
+	cout << "trajectory count " << all_4d_points.size() << endl;
+
+
 
 
 	for (size_t i = 0; i < all_4d_points.size(); i++)
@@ -1211,14 +1203,11 @@ void draw_objects(bool disable_colouring)
 
 
 
-
-		
-
 		for (size_t i = 0; i < pos.size(); i++)
 		{
 			for (size_t j = 0; j < pos[i].size() - 1; j++)
 			{
-				double t = j / static_cast<double>(pos[i].size() - 1);
+				double t = 0;// j / static_cast<double>(pos[i].size() - 1);
 
 				//set<vector_4> point_set;
 
@@ -1237,7 +1226,7 @@ void draw_objects(bool disable_colouring)
 				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
 
 				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
-
+				
 				vector_4 line = pos[i][j + 1] - pos[i][j];
 				glPushMatrix();
 				glTranslatef(static_cast<float>(pos[i][j].x), static_cast<float>(pos[i][j].y), 0);
@@ -1247,12 +1236,12 @@ void draw_objects(bool disable_colouring)
 
 				float yaw = 0.0f;
 
-				if (fabsf(static_cast<float>(line.x)) < 0.00001f && fabsf(static_cast<float>(line.z)) < 0.00001f)
+				if (fabsf(static_cast<float>(line.x)) < 0.00001f)
 					yaw = 0.0f;
 				else
-					yaw = atan2f(static_cast<float>(line.x), static_cast<float>(line.z));
+					yaw = atan2f(static_cast<float>(line.x), 0);
 
-				float pitch = -atan2f(static_cast<float>(line.y), static_cast<float>(sqrt(line.x * line.x + line.z * line.z)));
+				float pitch = -atan2f(static_cast<float>(line.y), static_cast<float>(sqrt(line.x * line.x)));
 
 				glRotatef(yaw * rad_to_deg, 0.0f, 1.0f, 0.0f);
 				glRotatef(pitch * rad_to_deg, 1.0f, 0.0f, 0.0f);
@@ -1277,15 +1266,12 @@ void draw_objects(bool disable_colouring)
 
 		}
 
-		
-		/*
-
 
 		for (size_t i = 0; i < all_4d_points.size(); i++)
 		{
 			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
 			{
-				double t = j / static_cast<double>(all_4d_points[i].size() - 1);
+				double t = 1;// j / static_cast<double>(all_4d_points[i].size() - 1);
 
 				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
 
@@ -1296,10 +1282,11 @@ void draw_objects(bool disable_colouring)
 				vector_4 line = all_4d_points[i][j + 1] - all_4d_points[i][j];
 
 				glPushMatrix();
+
 				glTranslatef(static_cast<float>(all_4d_points[i][j].x), static_cast<float>(all_4d_points[i][j].y), 0);
 
 				float line_len = static_cast<float>(line.length());
-				//line.normalize();
+				line.normalize();
 
 				float yaw = 0.0f;
 
@@ -1310,8 +1297,15 @@ void draw_objects(bool disable_colouring)
 
 				float pitch = -atan2f(static_cast<float>(line.y), static_cast<float>(sqrt(line.x * line.x)));
 
+				//if (i > 0)
+				//	yaw = -yaw;// pitch;
+
+				glPushMatrix();
+
 				glRotatef(yaw * rad_to_deg, 0.0f, 1.0f, 0.0f);
 				glRotatef(pitch * rad_to_deg, 1.0f, 0.0f, 0.0f);
+
+			
 
 	//			if (j == 0)
 		//			glutSolidSphere(0.005 * 1.5, 16, 16);
@@ -1321,12 +1315,14 @@ void draw_objects(bool disable_colouring)
 		//		else
 		//			glutSolidCone(0.005 * 4, 0.005 * 8, 20, 20);
 				
+					glPopMatrix();
+
 				glPopMatrix();
 			}
 
 		}
 
-		*/
+	
 
 
 
