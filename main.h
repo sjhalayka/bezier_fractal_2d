@@ -44,7 +44,7 @@ size_t point_res = 10;
 
 float grid_max = 1.5;
 complex<float> C(0.2, 0.5);
-unsigned short int max_iterations = 4;
+unsigned short int max_iterations = 2000;
 float threshold = 4.0;
 float beta = 2.0f;
 bool mandelbrot_mode = true;
@@ -477,17 +477,18 @@ const float exponent)
 		if (point_set.size() != all_4d_points[i].size())
 		{
 			is_cycle[i] = true;
-			all_4d_points[i].push_back(all_4d_points[i][0]);
+
+			all_4d_points[i].erase(all_4d_points[i].begin(), all_4d_points[i].begin() + (all_4d_points[i].size() / 10));// push_back(all_4d_points[i][0]);
 			orbit_count++;
 		}
 
-		cout << all_4d_points[i].size() << " " << point_set.size() << endl;
+		
 	}
 
+
+	
+	
 	cout << "orbit count " << orbit_count << endl;
-
-
-
 
 
 	for (size_t i = 0; i < all_4d_points.size(); i++)
@@ -496,10 +497,15 @@ const float exponent)
 
 		for (size_t j = 0; j < all_4d_points[i].size(); j++)
 			if (std::find(new_points.begin(), new_points.end(), all_4d_points[i][j]) == new_points.end())
-			{
-				cout << all_4d_points[i][j].x << " " << all_4d_points[i][j].y << endl;
 				new_points.push_back(all_4d_points[i][j]);
-			}
+
+//		new_points.push_back(all_4d_points[i][0]);
+		//new_points.push_back(all_4d_points[i][0]);
+
+		new_points.push_back(new_points[0]);
+//		new_points.push_back(new_points[0]);
+
+		//sort(new_points.begin(), new_points.end());
 
 		cout << endl;
 		cout << endl;
