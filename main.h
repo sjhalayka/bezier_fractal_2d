@@ -347,10 +347,10 @@ void get_isosurface(
 		{
 			image[x_res * y + x] = iterate_2d(mandelbrot, trajectory_points, Z, C, max_iterations, threshold, exponent);
 
-			//if (image[x_res * y + x] > threshold*2.0f)
-			//	image[x_res * y + x] = threshold*2.0f;
+			if (image[x_res * y + x] > threshold*2.0f)
+				image[x_res * y + x] = threshold*2.0f;
 
-			image[x_res * y + x] /= threshold;
+			image[x_res * y + x] /= 2.0f*threshold;
 			image[x_res * y + x] = 1 - image[x_res * y + x];
 		}
 	}
