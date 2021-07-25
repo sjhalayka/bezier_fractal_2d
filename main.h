@@ -347,10 +347,10 @@ void get_isosurface(
 		{
 			image[x_res * y + x] = iterate_2d(mandelbrot, trajectory_points, Z, C, max_iterations, threshold, exponent);
 
-			if (image[x_res * y + x] > threshold*2.0f)
-				image[x_res * y + x] = threshold*2.0f;
+			//if (image[x_res * y + x] > threshold*2.0f)
+			//	image[x_res * y + x] = threshold*2.0f;
 
-			image[x_res * y + x] /= 2.0f * threshold;
+			image[x_res * y + x] /= threshold;
 			image[x_res * y + x] = 1 - image[x_res * y + x];
 		}
 	}
@@ -362,13 +362,13 @@ void get_isosurface(
 	cout << endl;
 
 	double grid_x_pos = x_grid_min; // Start at minimum x.
-	double grid_y_pos = y_grid_min; // Start at maximum y.
+	double grid_y_pos = grid_max; // Start at maximum y.
 
 	float step_size = (grid_max - x_grid_min) / static_cast<double>(res - 1);
 
 
 	// Begin march.
-	for (short unsigned int y = 0; y < (y_res - 1); y++, grid_y_pos += step_size, grid_x_pos = x_grid_min)
+	for (short unsigned int y = 0; y < (y_res - 1); y++, grid_y_pos -= step_size, grid_x_pos = x_grid_min)
 	{
 		for (short unsigned int x = 0; x < (x_res - 1); x++, grid_x_pos += step_size)
 		{
@@ -385,7 +385,7 @@ void get_isosurface(
 			g.value[2] = image[(y + 1) * x_res + (x + 1)];
 			g.value[3] = image[y * x_res + (x + 1)];
 
-			g.generate_primitives(tris, 0.5F);
+			g.generate_primitives(tris, 0.5f);
 		}
 	}
 
@@ -468,6 +468,37 @@ const float exponent)
 		}
 	}
 
+	//vector<vector_4> new_points;
+
+	//for (size_t i = 0; i < all_4d_points.size(); i++)
+	//{
+	//	new_points.clear();
+
+	//	for (size_t j = 0; j < all_4d_points[i].size(); j++)
+	//	{
+	//		bool found_match = false;
+
+	//		for (size_t k = 0; k < new_points.size(); k++)
+	//		{
+	//			if (new_points[k] == all_4d_points[i][j])
+	//			{
+	//				found_match = true;
+	//				break;
+	//			}
+	//		}
+
+	//		if (found_match == false)
+	//		{
+	//			new_points.push_back(all_4d_points[i][j]);
+	//		}
+	//	}
+
+	//	cout << all_4d_points[i].size() << endl;
+	//	all_4d_points[i] = new_points;
+	//	cout << all_4d_points[i].size() << endl;
+	//	cout << endl;
+	//}
+
 
 	cout << "trajectory count " << all_4d_points.size() << endl;
 
@@ -511,7 +542,7 @@ const float exponent)
 	 get_isosurface(
 		mandelbrot,
 		grid_max,
-		500,
+		100,
 		C,
 		max_iterations,
 		threshold,
