@@ -44,7 +44,7 @@ size_t point_res = 10;
 
 float grid_max = 1.5;
 complex<float> C(0.2, 0.5);
-unsigned short int max_iterations = 2000;
+unsigned short int max_iterations = 4;
 float threshold = 4.0;
 float beta = 2.0f;
 bool mandelbrot_mode = true;
@@ -145,10 +145,10 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 	const float exponent)
 {
 	C = complex<float>(-0.1258695628494024, 0.7545827310532331);// Z;
-	Z = C;// complex<float>(0, 0);
+	Z = complex<float>(0, 0);
 
 	trajectory_points.clear();
-	trajectory_points.push_back(Z);
+	//trajectory_points.push_back(Z);
 
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
@@ -1203,7 +1203,7 @@ void draw_objects(bool disable_colouring)
 
 
 
-		for (size_t i = 0; i < pos.size(); i++)
+		for (size_t i = 0; i < 1/*pos.size()*/; i++)
 		{
 			for (size_t j = 0; j < pos[i].size() - 1; j++)
 			{
@@ -1267,7 +1267,7 @@ void draw_objects(bool disable_colouring)
 		}
 
 
-		for (size_t i = 0; i < all_4d_points.size(); i++)
+		for (size_t i = 0; i < 1/*all_4d_points.size()*/; i++)
 		{
 			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
 			{
