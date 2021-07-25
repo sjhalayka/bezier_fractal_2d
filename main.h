@@ -42,10 +42,10 @@ size_t point_res = 10;
 
 float grid_max = 1.5;
 complex<float> C(0.2, 0.5);
-unsigned short int max_iterations = 8;
+unsigned short int max_iterations = 200;
 float threshold = 4.0;
 float beta = 2.0f;
-bool mandelbrot_mode = FALSE;
+bool mandelbrot_mode = true;
 
 vector_3 background_colour(1.0, 1.0, 1.0);
 
@@ -95,6 +95,9 @@ void draw_objects(bool disable_colouring = false);
 	
 
 vector<vector<vector_4>> all_4d_points;
+
+vector<bool> is_cycle;
+
 vector<vector<vector_4>> pos;
 
 
@@ -150,7 +153,7 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 	Z = complex<float>(0, 0);
 
 	trajectory_points.clear();
-	trajectory_points.push_back(Z);
+//	trajectory_points.push_back(Z);
 
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
@@ -470,18 +473,19 @@ const float exponent)
 
 	size_t orbit_count = 0;
 
+	is_cycle.resize(all_4d_points.size(), false);
+
 	for (size_t i = 0; i < all_4d_points.size(); i++)
 	{
 		set<vector_4> point_set;
 
 		for (size_t j = 0; j < all_4d_points[i].size(); j++)
-		{
 			point_set.insert(all_4d_points[i][j]);
-		}
 
 		if (point_set.size() != all_4d_points[i].size())
 		{
-			cout << point_set.size() << endl;
+			is_cycle[i] = true;
+			all_4d_points[i].push_back(all_4d_points[i][0]);
 			orbit_count++;
 		}
 	}
@@ -489,15 +493,11 @@ const float exponent)
 	cout << "orbit count " << orbit_count << endl;
 
 
-
-
-
-
 	for (size_t i = 0; i < all_4d_points.size(); i++)
 	{
 		vector<vector_4> p;
 
-		for (float t = 0; t <= 0.2f; t += 0.01f)
+		for (float t = 0; t <= 1.0f; t += 0.01f)
 		//for (float t = 0; t <= 0.85f; t += 0.01f)
 		{
 			vector_4 v = getBezierPoint(all_4d_points[i], t);
@@ -511,7 +511,7 @@ const float exponent)
 	 get_isosurface(
 		mandelbrot,
 		grid_max,
-		1000,
+		500,
 		C,
 		max_iterations,
 		threshold,
@@ -1179,6 +1179,10 @@ void draw_objects(bool disable_colouring)
 	{
 
 
+
+
+		
+
 		for (size_t i = 0; i < pos.size(); i++)
 		{
 			for (size_t j = 0; j < pos[i].size() - 1; j++)
@@ -1222,13 +1226,20 @@ void draw_objects(bool disable_colouring)
 				glRotatef(yaw * rad_to_deg, 0.0f, 1.0f, 0.0f);
 				glRotatef(pitch * rad_to_deg, 1.0f, 0.0f, 0.0f);
 
-				if (j == 0)
-					glutSolidSphere(0.005 * 1.5, 16, 16);
+//				if (j == 0)
+///					glutSolidSphere(0.005 * 1.5, 16, 16);
 
-				if (j < pos[i].size() - 2)
+				if (is_cycle[i] == true)
+				{
 					gluCylinder(glu_obj, 0.005, 0.005, line_len, 20, 2);
+				}
 				else
-					glutSolidCone(0.005 * 4, 0.005 * 8, 20, 20);
+				{
+					if (j < pos[i].size() - 2)
+						gluCylinder(glu_obj, 0.005, 0.005, line_len, 20, 2);
+					else
+						glutSolidCone(0.005 * 4, 0.005 * 8, 20, 20);
+				}
 
 				glPopMatrix();
 			}
@@ -1236,53 +1247,58 @@ void draw_objects(bool disable_colouring)
 		}
 
 		
+		/*
 
 
+		for (size_t i = 0; i < all_4d_points.size(); i++)
+		{
+			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
+			{
+				double t = j / static_cast<double>(all_4d_points[i].size() - 1);
 
-		//for (size_t i = 0; i < all_4d_points.size(); i++)
-		//{
-		//	for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
-		//	{
-		//		double t = j / static_cast<double>(all_4d_points[i].size() - 1);
+				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
 
-		//		RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
+				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
 
-		//		float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
+				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
 
-		//		glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
+				vector_4 line = all_4d_points[i][j + 1] - all_4d_points[i][j];
 
-		//		vector_4 line = all_4d_points[i][j + 1] - all_4d_points[i][j];
+				glPushMatrix();
+				glTranslatef(static_cast<float>(all_4d_points[i][j].x), static_cast<float>(all_4d_points[i][j].y), 0);
 
-		//		glPushMatrix();
-		//		glTranslatef(static_cast<float>(all_4d_points[i][j].x), static_cast<float>(all_4d_points[i][j].y), 0);
+				float line_len = static_cast<float>(line.length());
+				//line.normalize();
 
-		//		float line_len = static_cast<float>(line.length());
-		//		//line.normalize();
+				float yaw = 0.0f;
 
-		//		float yaw = 0.0f;
+				if (fabsf(static_cast<float>(line.x)) < 0.00001f)
+					yaw = 0.0f;
+				else
+					yaw = atan2f(static_cast<float>(line.y), 0);
 
-		//		if (fabsf(static_cast<float>(line.x)) < 0.00001f)
-		//			yaw = 0.0f;
-		//		else
-		//			yaw = atan2f(static_cast<float>(line.y), 0);
+				float pitch = -atan2f(static_cast<float>(line.y), static_cast<float>(sqrt(line.x * line.x)));
 
-		//		float pitch = -atan2f(static_cast<float>(line.y), static_cast<float>(sqrt(line.x * line.x)));
+				glRotatef(yaw * rad_to_deg, 0.0f, 1.0f, 0.0f);
+				glRotatef(pitch * rad_to_deg, 1.0f, 0.0f, 0.0f);
 
-		//		glRotatef(yaw * rad_to_deg, 0.0f, 1.0f, 0.0f);
-		//		glRotatef(pitch * rad_to_deg, 1.0f, 0.0f, 0.0f);
-
-		//		if (j == 0)
+	//			if (j == 0)
 		//			glutSolidSphere(0.005 * 1.5, 16, 16);
 
 		//		if (j < all_4d_points[i].size() - 2)
-		//			gluCylinder(glu_obj, 0.005, 0.005, line_len, 20, 2);
+					gluCylinder(glu_obj, 0.005, 0.005, line_len, 20, 2);
 		//		else
 		//			glutSolidCone(0.005 * 4, 0.005 * 8, 20, 20);
-		//		
-		//		glPopMatrix();
-		//	}
+				
+				glPopMatrix();
+			}
 
-		//}
+		}
+
+		*/
+
+
+
 
 	}
 
