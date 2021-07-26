@@ -17,6 +17,8 @@ using namespace custom_math;
 
 #include "marching_squares.h"
 
+#include "graph.h"
+
 #include <fstream>
 using std::ofstream;
 
@@ -43,7 +45,7 @@ size_t point_res = 10;
 
 
 float grid_max = 1.5;
-complex<float> C(0.2, 0.5);
+complex<float> C(0.2f, 0.5f);
 unsigned short int max_iterations = 2000;
 float threshold = 4.0;
 float beta = 2.0f;
@@ -100,7 +102,46 @@ vector<vector<vector_4>> all_4d_points;
 
 vector<bool> is_cycle;
 
-vector<vector<vector_4>> pos;
+vector<vector<vector_4>> pos;	
+
+
+// https://scicomp.stackexchange.com/questions/2466/how-to-build-a-recursive-spline-function-in-c
+
+
+
+void Spline(vector<complex<float>>	in, // input
+	vector<complex<float>> A,
+	vector<complex<float>> B,
+	vector<complex<float>> C,
+	vector<complex<float>> D)     // output
+{
+	const size_t N = in.size() - 1;
+
+	vector<double> w(N);
+	vector<double> h(N);
+	vector<double> ftt(N + 1);
+
+	for (size_t i = 0; i < N; i++)
+	{
+		w[i] = (in[i + 1].real() - in[i].real());
+		h[i] = (in[i + 1].imag() - in[i].imag()) / w[i];
+	}
+
+	ftt[0] = 0;
+
+	for (size_t i = 0; i < N - 1; i++)
+		ftt[i + 1] = 3 * (h[i + 1] - h[i]) / (w[i + 1] + w[i]);
+
+	ftt[N] = 0;
+
+	for (size_t i = 0; i < N; i++)
+	{
+		A[i] = (ftt[i + 1] - ftt[i]) / (6.0 * w[i]);
+		B[i] = ftt[i] / 2;
+		C[i] = h[i] - w[i] * (ftt[i + 1] + 2.0 * ftt[i]) / 6.0;
+		D[i] = in[i];
+	}
+}
 
 
 
@@ -478,7 +519,7 @@ const float exponent)
 		{
 			is_cycle[i] = true;
 
-			all_4d_points[i].erase(all_4d_points[i].begin(), all_4d_points[i].begin() + (all_4d_points[i].size() / 10));// push_back(all_4d_points[i][0]);
+			all_4d_points[i].erase(all_4d_points[i].begin(), all_4d_points[i].begin() + (all_4d_points[i].size() / 10 + 1));// push_back(all_4d_points[i][0]);
 			orbit_count++;
 		}
 
@@ -499,11 +540,7 @@ const float exponent)
 			if (std::find(new_points.begin(), new_points.end(), all_4d_points[i][j]) == new_points.end())
 				new_points.push_back(all_4d_points[i][j]);
 
-//		new_points.push_back(all_4d_points[i][0]);
-		//new_points.push_back(all_4d_points[i][0]);
-
 		new_points.push_back(new_points[0]);
-//		new_points.push_back(new_points[0]);
 
 		//sort(new_points.begin(), new_points.end());
 
@@ -1273,7 +1310,32 @@ void draw_objects(bool disable_colouring)
 		}
 
 
-		for (size_t i = 0; i < 1/*all_4d_points.size()*/; i++)
+
+		for (size_t i = 0; i < all_4d_points.size(); i++)
+		{
+			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
+			{
+				double t = 1;// j / static_cast<double>(all_4d_points[i].size() - 1);
+
+				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
+
+				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
+
+				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
+
+				vector_4 line =  - all_4d_points[i][j];
+
+				glBegin(GL_LINES);
+
+				glVertex3f(all_4d_points[i][j + 1].x, all_4d_points[i][j + 1].y, all_4d_points[i][j + 1].z);
+				glVertex3f(all_4d_points[i][j].x, all_4d_points[i][j].y, all_4d_points[i][j].z);
+
+				glEnd();
+			}
+		}
+
+		/*
+		for (size_t i = 0; i < all_4d_points.size(); i++)
 		{
 			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
 			{
@@ -1329,7 +1391,7 @@ void draw_objects(bool disable_colouring)
 		}
 
 	
-
+	*/
 
 
 
