@@ -42,7 +42,7 @@ using std::set;
 using std::unordered_set;
 
 size_t point_res = 25;
-
+size_t max_orbit_length = 0;
 
 float grid_max = 1.5;
 complex<float> C(0.2f, 0.5f);
@@ -488,6 +488,9 @@ const float exponent)
 		all_4d_points[i] = new_points;
 		cout << all_4d_points[i].size() << endl;
 		cout << endl;
+
+		if (all_4d_points[i].size() > max_orbit_length)
+			max_orbit_length = all_4d_points[i].size();
 	}
 
 
@@ -1048,6 +1051,142 @@ void draw_line(const vector_4 point_a, const vector_4 point_b)
 }
 
 
+
+
+class RGB
+{
+public:
+	unsigned char r, g, b;
+};
+
+RGB HSBtoRGB(unsigned short int hue_degree, unsigned char sat_percent, unsigned char bri_percent)
+{
+	float R = 0.0f;
+	float G = 0.0f;
+	float B = 0.0f;
+
+	if (hue_degree > 359)
+		hue_degree = 359;
+
+	if (sat_percent > 100)
+		sat_percent = 100;
+
+	if (bri_percent > 100)
+		bri_percent = 100;
+
+	float hue_pos = 6.0f - ((static_cast<float>(hue_degree) / 359.0f) * 6.0f);
+
+	if (hue_pos >= 0.0f && hue_pos < 1.0f)
+	{
+		R = 255.0f;
+		G = 0.0f;
+		B = 255.0f * hue_pos;
+	}
+	else if (hue_pos >= 1.0f && hue_pos < 2.0f)
+	{
+		hue_pos -= 1.0f;
+
+		R = 255.0f - (255.0f * hue_pos);
+		G = 0.0f;
+		B = 255.0f;
+	}
+	else if (hue_pos >= 2.0f && hue_pos < 3.0f)
+	{
+		hue_pos -= 2.0f;
+
+		R = 0.0f;
+		G = 255.0f * hue_pos;
+		B = 255.0f;
+	}
+	else if (hue_pos >= 3.0f && hue_pos < 4.0f)
+	{
+		hue_pos -= 3.0f;
+
+		R = 0.0f;
+		G = 255.0f;
+		B = 255.0f - (255.0f * hue_pos);
+	}
+	else if (hue_pos >= 4.0f && hue_pos < 5.0f)
+	{
+		hue_pos -= 4.0f;
+
+		R = 255.0f * hue_pos;
+		G = 255.0f;
+		B = 0.0f;
+	}
+	else
+	{
+		hue_pos -= 5.0f;
+
+		R = 255.0f;
+		G = 255.0f - (255.0f * hue_pos);
+		B = 0.0f;
+	}
+
+	if (100 != sat_percent)
+	{
+		if (0 == sat_percent)
+		{
+			R = 255.0f;
+			G = 255.0f;
+			B = 255.0f;
+		}
+		else
+		{
+			if (255.0f != R)
+				R += ((255.0f - R) / 100.0f) * (100.0f - sat_percent);
+			if (255.0f != G)
+				G += ((255.0f - G) / 100.0f) * (100.0f - sat_percent);
+			if (255.0f != B)
+				B += ((255.0f - B) / 100.0f) * (100.0f - sat_percent);
+		}
+	}
+
+	if (100 != bri_percent)
+	{
+		if (0 == bri_percent)
+		{
+			R = 0.0f;
+			G = 0.0f;
+			B = 0.0f;
+		}
+		else
+		{
+			if (0.0f != R)
+				R *= static_cast<float>(bri_percent) / 100.0f;
+			if (0.0f != G)
+				G *= static_cast<float>(bri_percent) / 100.0f;
+			if (0.0f != B)
+				B *= static_cast<float>(bri_percent) / 100.0f;
+		}
+	}
+
+	if (R < 0.0f)
+		R = 0.0f;
+	else if (R > 255.0f)
+		R = 255.0f;
+
+	if (G < 0.0f)
+		G = 0.0f;
+	else if (G > 255.0f)
+		G = 255.0f;
+
+	if (B < 0.0f)
+		B = 0.0f;
+	else if (B > 255.0f)
+		B = 255.0f;
+
+	RGB rgb;
+
+	rgb.r = static_cast<unsigned char>(R);
+	rgb.g = static_cast<unsigned char>(G);
+	rgb.b = static_cast<unsigned char>(B);
+
+	return rgb;
+}
+
+
+
 // This render mode won't apply to a curved 3D space.
 void draw_objects(bool disable_colouring)
 {
@@ -1081,70 +1220,7 @@ void draw_objects(bool disable_colouring)
 	{
 
 
-		/*
-		for (size_t i = 0; i < pos.size(); i++)
-		{
-			for (size_t j = 0; j < pos[i].size() - 1; j++)
-			{
-				double t = 0;// j / static_cast<double>(pos[i].size() - 1);
 
-				//set<vector_4> point_set;
-
-				//for (size_t j = 0; j < all_4d_points[i].size(); j++)
-				//{
-				//	point_set.insert(all_4d_points[i][j]);
-				//}
-
-				//if (point_set.size() == all_4d_points[i].size())
-				//	continue;
-
-//				double t = static_cast<float>(point_set.size()) / static_cast<float>(all_4d_points[i].size());
-
-				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
-
-				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
-
-				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
-				
-				vector_4 line = pos[i][j + 1] - pos[i][j];
-				glPushMatrix();
-				glTranslatef(static_cast<float>(pos[i][j].x), static_cast<float>(pos[i][j].y), 0);
-
-				float line_len = static_cast<float>(line.length());
-				line.normalize();
-
-				float yaw = 0.0f;
-
-				if (fabsf(static_cast<float>(line.x)) < 0.00001f)
-					yaw = 0.0f;
-				else
-					yaw = atan2f(static_cast<float>(line.x), 0);
-
-				float pitch = -atan2f(static_cast<float>(line.y), static_cast<float>(sqrt(line.x * line.x)));
-
-				glRotatef(yaw * rad_to_deg, 0.0f, 1.0f, 0.0f);
-				glRotatef(pitch * rad_to_deg, 1.0f, 0.0f, 0.0f);
-
-//				if (j == 0)
-///					glutSolidSphere(0.005 * 1.5, 16, 16);
-
-				if (is_cycle[i] == true)
-				{
-					gluCylinder(glu_obj, 0.005, 0.005, line_len, 20, 2);
-				}
-				else
-				{
-					if (j < pos[i].size() - 2)
-						gluCylinder(glu_obj, 0.005, 0.005, line_len, 20, 2);
-					else
-						glutSolidCone(0.005 * 4, 0.005 * 8, 20, 20);
-				}
-
-				glPopMatrix();
-			}
-
-		}
-		*/
 
 
 
@@ -1153,7 +1229,15 @@ void draw_objects(bool disable_colouring)
 		{
 			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
 			{
-				float colour[] = { 255 / 255.0f, 127 / 255.0f, 0 / 255.0f, 1.0f };
+//				float colour[] = { 255 / 255.0f, 127 / 255.0f, 0 / 255.0f, 1.0f };
+
+				double t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_orbit_length);
+
+				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
+
+				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
+
+
 
 				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
 
