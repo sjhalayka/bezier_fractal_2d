@@ -41,7 +41,7 @@ using std::set;
 #include <unordered_set>
 using std::unordered_set;
 
-size_t point_res = 10;
+size_t point_res = 25;
 
 
 float grid_max = 1.5;
@@ -103,8 +103,6 @@ vector<vector<vector_4>> all_4d_points;
 
 vector<bool> is_cycle;
 
-vector<vector<vector_4>> pos;	
-
 
 
 
@@ -147,11 +145,11 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 	const float threshold,
 	const float exponent)
 {
-	C = complex<float>(-0.3930037729442120, 0.5866060592234135);// Z;
+	C = Z;// complex<float>(-0.1258695628494024, 0.7545827310532331);// Z;
 	Z = complex<float>(0, 0);
 
 	trajectory_points.clear();
-	//trajectory_points.push_back(Z);
+	trajectory_points.push_back(Z);
 
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
@@ -339,6 +337,8 @@ void get_isosurface(
 
 	for (size_t x = 0; x < x_res; x++, Z += x_step_size)
 	{
+		cout << x + 1 << " of " << x_res << endl;
+
 		Z = complex<float>(Z.real(), y_grid_min);
 
 		for (size_t y = 0; y < y_res; y++, Z += y_step_size)
@@ -390,30 +390,6 @@ void get_isosurface(
 
 }
 
-
-// https://stackoverflow.com/questions/785097/how-do-i-implement-a-bézier-curve-in-c
-vector_4 getBezierPoint(vector<vector_4> points, float t)
-{
-	size_t i = points.size() - 1;
-
-	while (i > 0)
-	{
-		for (size_t k = 0; k < i; k++)
-		{
-			points[k].x += t * (points[k + 1].x - points[k].x);
-			points[k].y += t * (points[k + 1].y - points[k].y);
-			points[k].z += t * (points[k + 1].z - points[k].z);
-			points[k].w += t * (points[k + 1].w - points[k].w);
-		}
-
-		i--;
-	}
-
-	return points[0];
-}
-
-
-
 void get_points(
 	const bool mandelbrot,
 	const float grid_max,
@@ -424,7 +400,6 @@ void get_points(
 const float exponent)
 {
 	all_4d_points.clear();
-	pos.clear();
 
 	const float x_grid_max = grid_max;
 	const float x_grid_min = -x_grid_max;
@@ -521,25 +496,13 @@ const float exponent)
 
 
 
-	for (size_t i = 0; i < all_4d_points.size(); i++)
-	{
-		vector<vector_4> p;
 
-		for (float t = 0; t <= 1.0f; t += 0.01f)
-		//for (float t = 0; t <= 0.85f; t += 0.01f)
-		{
-			vector_4 v = getBezierPoint(all_4d_points[i], t);
-			p.push_back(v);
-		}
-
-		pos.push_back(p);
-	}
 
 
 	 get_isosurface(
 		mandelbrot,
 		grid_max,
-		100,
+		500,
 		C,
 		max_iterations,
 		threshold,
@@ -1038,138 +1001,6 @@ void passive_motion_func(int x, int y)
 
 
 
-class RGB
-{
-public:
-	unsigned char r, g, b;
-};
-
-RGB HSBtoRGB(unsigned short int hue_degree, unsigned char sat_percent, unsigned char bri_percent)
-{
-	float R = 0.0f;
-	float G = 0.0f;
-	float B = 0.0f;
-
-	if (hue_degree > 359)
-		hue_degree = 359;
-
-	if (sat_percent > 100)
-		sat_percent = 100;
-
-	if (bri_percent > 100)
-		bri_percent = 100;
-
-	float hue_pos = 6.0f - ((static_cast<float>(hue_degree) / 359.0f) * 6.0f);
-
-	if (hue_pos >= 0.0f && hue_pos < 1.0f)
-	{
-		R = 255.0f;
-		G = 0.0f;
-		B = 255.0f * hue_pos;
-	}
-	else if (hue_pos >= 1.0f && hue_pos < 2.0f)
-	{
-		hue_pos -= 1.0f;
-
-		R = 255.0f - (255.0f * hue_pos);
-		G = 0.0f;
-		B = 255.0f;
-	}
-	else if (hue_pos >= 2.0f && hue_pos < 3.0f)
-	{
-		hue_pos -= 2.0f;
-
-		R = 0.0f;
-		G = 255.0f * hue_pos;
-		B = 255.0f;
-	}
-	else if (hue_pos >= 3.0f && hue_pos < 4.0f)
-	{
-		hue_pos -= 3.0f;
-
-		R = 0.0f;
-		G = 255.0f;
-		B = 255.0f - (255.0f * hue_pos);
-	}
-	else if (hue_pos >= 4.0f && hue_pos < 5.0f)
-	{
-		hue_pos -= 4.0f;
-
-		R = 255.0f * hue_pos;
-		G = 255.0f;
-		B = 0.0f;
-	}
-	else
-	{
-		hue_pos -= 5.0f;
-
-		R = 255.0f;
-		G = 255.0f - (255.0f * hue_pos);
-		B = 0.0f;
-	}
-
-	if (100 != sat_percent)
-	{
-		if (0 == sat_percent)
-		{
-			R = 255.0f;
-			G = 255.0f;
-			B = 255.0f;
-		}
-		else
-		{
-			if (255.0f != R)
-				R += ((255.0f - R) / 100.0f) * (100.0f - sat_percent);
-			if (255.0f != G)
-				G += ((255.0f - G) / 100.0f) * (100.0f - sat_percent);
-			if (255.0f != B)
-				B += ((255.0f - B) / 100.0f) * (100.0f - sat_percent);
-		}
-	}
-
-	if (100 != bri_percent)
-	{
-		if (0 == bri_percent)
-		{
-			R = 0.0f;
-			G = 0.0f;
-			B = 0.0f;
-		}
-		else
-		{
-			if (0.0f != R)
-				R *= static_cast<float>(bri_percent) / 100.0f;
-			if (0.0f != G)
-				G *= static_cast<float>(bri_percent) / 100.0f;
-			if (0.0f != B)
-				B *= static_cast<float>(bri_percent) / 100.0f;
-		}
-	}
-
-	if (R < 0.0f)
-		R = 0.0f;
-	else if (R > 255.0f)
-		R = 255.0f;
-
-	if (G < 0.0f)
-		G = 0.0f;
-	else if (G > 255.0f)
-		G = 255.0f;
-
-	if (B < 0.0f)
-		B = 0.0f;
-	else if (B > 255.0f)
-		B = 255.0f;
-
-	RGB rgb;
-
-	rgb.r = static_cast<unsigned char>(R);
-	rgb.g = static_cast<unsigned char>(G);
-	rgb.b = static_cast<unsigned char>(B);
-
-	return rgb;
-}
-
 
 void renderCylinder(float x1, float y1, float z1, float x2, float y2, float z2, float radius, int subdivisions)
 {
@@ -1206,9 +1037,9 @@ void renderCylinder(float x1, float y1, float z1, float x2, float y2, float z2, 
 	gluDeleteQuadric(quadric);
 }
 
-void draw_line(const vector_4 point_a, const vector_4 point_b, bool negate_x)
+void draw_line(const vector_4 point_a, const vector_4 point_b)
 {
-	renderCylinder(point_a.x, point_a.y, point_a.z, point_b.x, point_b.y, point_b.z, 0.05f, 20);
+	renderCylinder(point_a.x, point_a.y, point_a.z, point_b.x, point_b.y, point_b.z, 0.001f, 20);
 
 	return;
 
@@ -1322,21 +1153,15 @@ void draw_objects(bool disable_colouring)
 		{
 			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
 			{
-				double t = 1;// j / static_cast<double>(all_4d_points[i].size() - 1);
-
-				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
-
-				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
+				float colour[] = { 255 / 255.0f, 127 / 255.0f, 0 / 255.0f, 1.0f };
 
 				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
 
-				if(j == 0)
-					draw_line(all_4d_points[i][j + 1], all_4d_points[i][j], true);
-				else
-					draw_line(all_4d_points[i][j + 1], all_4d_points[i][j], false);
+				draw_line(all_4d_points[i][j + 1], all_4d_points[i][j]);
 			}
 			
-			draw_line(all_4d_points[i][all_4d_points[i].size() - 1], all_4d_points[i][0], false);
+			if(is_cycle[i])
+				draw_line(all_4d_points[i][all_4d_points[i].size() - 1], all_4d_points[i][0]);
 		}
 	}
 
