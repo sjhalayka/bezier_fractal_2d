@@ -17,6 +17,8 @@ using namespace custom_math;
 
 #include "marching_squares.h"
 
+#include "graph.h"
+
 #include <fstream>
 using std::ofstream;
 
@@ -36,12 +38,18 @@ using namespace std;
 #include <set>
 using std::set;
 
+#include <unordered_set>
+using std::unordered_set;
 
-size_t point_res = 25;
+size_t point_res = 10;
 
 
-
-
+float grid_max = 1.5;
+complex<float> C(0.2f, 0.5f);
+unsigned short int max_iterations = 2000;
+float threshold = 4.0;
+float beta = 2.0f;
+bool mandelbrot_mode = true;
 
 vector_3 background_colour(1.0, 1.0, 1.0);
 
@@ -87,11 +95,15 @@ void motion_func(int x, int y);
 void passive_motion_func(int x, int y);
 void draw_objects(bool disable_colouring = false);
 
+const float rad_to_deg = 180.0f / static_cast<float>(pi);
 
-
+	
 
 vector<vector<vector_4>> all_4d_points;
-vector<vector<vector_4>> pos;
+
+vector<bool> is_cycle;
+
+vector<vector<vector_4>> pos;	
 
 
 
@@ -106,21 +118,45 @@ float mesh_solid[] = { 0.0f, 0.5f, 1.0f, 1.0f };
 
 
 
+complex<float> pow_complex(const complex<float>& in, const float beta)
+{
+	float fabs_beta = fabsf(beta);
+
+	float self_dot = in.real() * in.real() + in.imag() * in.imag();
+
+	if (self_dot == 0)
+		return complex<float>(0, 0);
+
+	float len = std::sqrtf(self_dot);
+	float self_dot_beta = std::powf(self_dot, fabs_beta / 2.0f);
+
+	complex<float> out = complex<float>(
+		self_dot_beta * std::cos(fabs_beta * std::acos(in.real() / len)),
+		in.imag() * self_dot_beta * std::sin(fabs_beta * std::acos(in.real() / len)) / sqrtf(in.imag() * in.imag()));
+
+	if (beta < 0)
+		out = conj(out) / powf(abs(out), 2.0f);
+
+	return out;
+}
+
 float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 	complex<float> Z,
 	complex<float> C,
 	const short unsigned int max_iterations,
-	const float threshold)
+	const float threshold,
+	const float exponent)
 {
-	C = Z;
+	C = complex<float>(-0.3930037729442120, 0.5866060592234135);// Z;
 	Z = complex<float>(0, 0);
 
 	trajectory_points.clear();
-	trajectory_points.push_back(Z);
+	//trajectory_points.push_back(Z);
 
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
-		Z = Z * Z + C;
+		Z = pow_complex(Z, exponent);
+		Z += C;
 
 		trajectory_points.push_back(Z);
 
@@ -135,18 +171,20 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 
 
 
-float iterate_2d(vector< complex<float> >& trajectory_points,
+float iterate_julia_2d(vector< complex<float> >& trajectory_points,
 	complex<float> Z,
 	const complex<float> C,
 	const short unsigned int max_iterations,
-	const float threshold)
+	const float threshold,
+	const float exponent)
 {
 	trajectory_points.clear();
 	trajectory_points.push_back(Z);
 
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
-		Z = Z * Z + C;
+		Z = pow_complex(Z, exponent);
+		Z += C;
 
 		trajectory_points.push_back(Z);
 
@@ -158,7 +196,36 @@ float iterate_2d(vector< complex<float> >& trajectory_points,
 }
 
 
+float iterate_2d(bool mandelbrot,
+	vector< complex<float> >& trajectory_points,
+	complex<float> Z,
+	const complex<float> C,
+	const short unsigned int max_iterations,
+	const float threshold,
+	const float exponent)
+{
+	if (mandelbrot)
+	{
+		return iterate_mandelbrot_2d(
+			trajectory_points,
+			Z,
+			C,
+			max_iterations,
+			threshold,
+			exponent);
+	}
+	else
+	{
+		return iterate_julia_2d(
+			trajectory_points,
+			Z,
+			C,
+			max_iterations,
+			threshold,
+			exponent);
+	}
 
+}
 
 void get_vertices_and_normals_from_triangles(vector<triangle>& t, vector<vertex_3>& fn, vector<vertex_3>& v, vector<vertex_3>& vn)
 {
@@ -243,11 +310,13 @@ void get_vertices_and_normals_from_triangles(vector<triangle>& t, vector<vertex_
 
 
 void get_isosurface(
+	const bool mandelbrot,
 	const float grid_max,
 	const size_t res,
 	const complex<float> C,
 	const unsigned short int max_iterations,
-	const float threshold)
+	const float threshold,
+	const float exponent)
 {
 	tris.clear();
 	face_normals.clear();
@@ -274,14 +343,12 @@ void get_isosurface(
 
 		for (size_t y = 0; y < y_res; y++, Z += y_step_size)
 		{
-			image[x_res * y + x] = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
-			//image[x_res * y + x] = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
-
+			image[x_res * y + x] = iterate_2d(mandelbrot, trajectory_points, Z, C, max_iterations, threshold, exponent);
 
 			if (image[x_res * y + x] > threshold*2.0f)
 				image[x_res * y + x] = threshold*2.0f;
 
-			image[x_res * y + x] /= 2.0f * threshold;
+			image[x_res * y + x] /= 2.0f*threshold;
 			image[x_res * y + x] = 1 - image[x_res * y + x];
 		}
 	}
@@ -293,19 +360,18 @@ void get_isosurface(
 	cout << endl;
 
 	double grid_x_pos = x_grid_min; // Start at minimum x.
-	double grid_y_pos = y_grid_min; // Start at maximum y.
+	double grid_y_pos = grid_max; // Start at maximum y.
 
 	float step_size = (grid_max - x_grid_min) / static_cast<double>(res - 1);
 
 
 	// Begin march.
-	for (short unsigned int y = 0; y < (y_res - 1); y++, grid_y_pos += step_size, grid_x_pos = x_grid_min)
+	for (short unsigned int y = 0; y < (y_res - 1); y++, grid_y_pos -= step_size, grid_x_pos = x_grid_min)
 	{
 		for (short unsigned int x = 0; x < (x_res - 1); x++, grid_x_pos += step_size)
 		{
 			// Corner vertex order: 03
 			//                      12
-			// e.g.: clockwise, as in OpenGL
 			g.vertex[0] = vertex_3(grid_x_pos, grid_y_pos, 0, 0);
 			g.vertex[1] = vertex_3(grid_x_pos, grid_y_pos - step_size, 0, 0);
 			g.vertex[2] = vertex_3(grid_x_pos + step_size, grid_y_pos - step_size, 0, 0);
@@ -316,7 +382,7 @@ void get_isosurface(
 			g.value[2] = image[(y + 1) * x_res + (x + 1)];
 			g.value[3] = image[y * x_res + (x + 1)];
 
-			g.generate_primitives(tris, 0.5F);
+			g.generate_primitives(tris, 0.5f);
 		}
 	}
 
@@ -348,24 +414,27 @@ vector_4 getBezierPoint(vector<vector_4> points, float t)
 
 
 
-void get_points(size_t res)
+void get_points(
+	const bool mandelbrot,
+	const float grid_max,
+	const size_t res,
+	const complex<float> C,
+	const unsigned short int max_iterations,
+	const float threshold,
+const float exponent)
 {
 	all_4d_points.clear();
 	pos.clear();
 
-	const float x_grid_max = 1.5;
+	const float x_grid_max = grid_max;
 	const float x_grid_min = -x_grid_max;
 	const size_t x_res = res;
 	const complex<float> x_step_size((x_grid_max - x_grid_min) / (x_res - 1), 0);
 
-	const float y_grid_max = 1.5;
+	const float y_grid_max = grid_max;
 	const float y_grid_min = -y_grid_max;
 	const size_t y_res = res;
 	const complex<float> y_step_size(0, (y_grid_max - y_grid_min) / (y_res - 1));
-
-	const complex<float> C(0.2f, 0.5f);
-	const unsigned short int max_iterations = 8;
-	const float threshold = 4.0f;
 
 	complex<float> Z(x_grid_min, y_grid_min);
 
@@ -377,8 +446,7 @@ void get_points(size_t res)
 
 		for (size_t y = 0; y < y_res; y++, Z += y_step_size)
 		{
-			float magnitude = iterate_mandelbrot_2d(trajectory_points, Z, C, max_iterations, threshold);
-			//float magnitude = iterate_2d(trajectory_points, Z, C, max_iterations, threshold);
+			float magnitude = iterate_2d(mandelbrot, trajectory_points, Z, C, max_iterations, threshold, exponent);
 
 			if (magnitude < threshold)
 			{
@@ -397,6 +465,62 @@ void get_points(size_t res)
 		}
 	}
 
+
+	size_t orbit_count = 0;
+
+	is_cycle.resize(all_4d_points.size(), false);
+
+	for (size_t i = 0; i < all_4d_points.size(); i++)
+	{
+		set<vector_4> point_set;
+
+		for (size_t j = 0; j < all_4d_points[i].size(); j++)
+			point_set.insert(all_4d_points[i][j]);
+
+		if (point_set.size() != all_4d_points[i].size())
+		{
+			is_cycle[i] = true;
+
+			all_4d_points[i].erase(all_4d_points[i].begin(), all_4d_points[i].begin() + (all_4d_points[i].size() / 10 + 1));// push_back(all_4d_points[i][0]);
+			orbit_count++;
+		}
+
+		
+	}
+
+
+	
+	
+	cout << "orbit count " << orbit_count << endl;
+
+
+	for (size_t i = 0; i < all_4d_points.size(); i++)
+	{
+		vector<vector_4> new_points;
+
+		for (size_t j = 0; j < all_4d_points[i].size(); j++)
+			if (std::find(new_points.begin(), new_points.end(), all_4d_points[i][j]) == new_points.end())
+				new_points.push_back(all_4d_points[i][j]);
+
+		//new_points.push_back(new_points[0]);
+
+		//sort(new_points.begin(), new_points.end());
+
+		cout << endl;
+		cout << endl;
+
+		cout << all_4d_points[i].size() << endl;
+		all_4d_points[i] = new_points;
+		cout << all_4d_points[i].size() << endl;
+		cout << endl;
+	}
+
+
+	cout << "trajectory count " << all_4d_points.size() << endl;
+
+
+
+
 	for (size_t i = 0; i < all_4d_points.size(); i++)
 	{
 		vector<vector_4> p;
@@ -413,11 +537,13 @@ void get_points(size_t res)
 
 
 	 get_isosurface(
-		x_grid_max,
+		mandelbrot,
+		grid_max,
 		100,
 		C,
 		max_iterations,
-		threshold);
+		threshold,
+		exponent);
 
 
 
@@ -425,11 +551,11 @@ void get_points(size_t res)
 
 
 // TODO: fix camera bug where portrait mode crashes.
-void take_screenshot(size_t num_cams_wide, size_t res, const char *filename, const bool reverse_rows = false)
+void take_screenshot(size_t num_cams_wide, const char *filename, const bool reverse_rows = false)
 {
 	screenshot_mode = true;
 
-	get_points(res);
+	//get_points(res);
 
 	// Set up Targa TGA image data.
 	unsigned char  idlength = 0;
@@ -517,7 +643,7 @@ void take_screenshot(size_t num_cams_wide, size_t res, const char *filename, con
 	if(!out.is_open())
 	{
 		cout << "Failed to open TGA file for writing: " << filename << endl;
-		return;
+		return;	
 	}
 
 	out.write(reinterpret_cast<char *>(&idlength), 1);
@@ -535,7 +661,7 @@ void take_screenshot(size_t num_cams_wide, size_t res, const char *filename, con
 
 	out.write(reinterpret_cast<char *>(&pixel_data[0]), num_bytes);
 
-	get_points(point_res);
+	//get_points(point_res);
 }
 
 void idle_func(void)
@@ -603,7 +729,7 @@ void init_opengl(const int &width, const int &height)
 
 	main_camera.Set(0, 0, camera_w, camera_fov, win_x, win_y, camera_near, camera_far);
 
-	get_points(point_res);
+	get_points(mandelbrot_mode, grid_max, point_res, C, max_iterations, threshold, beta);
 
 }
 
@@ -774,7 +900,7 @@ void display_func(void)
 
 void keyboard_func(unsigned char key, int x, int y)
 {
-	switch(tolower(key))
+	switch (tolower(key))
 	{
 	case 'y':
 	{
@@ -787,35 +913,73 @@ void keyboard_func(unsigned char key, int x, int y)
 		break;
 	}
 	case 'h':
-		{
-			draw_outline = !draw_outline;
-			break;
-		}
+	{
+		draw_outline = !draw_outline;
+		break;
+	}
 	case 'j':
-		{
-			draw_axis = !draw_axis;
-			break;
-		}
+	{
+		draw_axis = !draw_axis;
+		break;
+	}
 	case 'k':
-		{
-			draw_control_list = !draw_control_list;
-			break;
-		}
+	{
+		draw_control_list = !draw_control_list;
+		break;
+	}
 	case 'n':
 	{
-		take_screenshot(8, point_res, "screenshot.tga");
+		get_points(mandelbrot_mode, grid_max, point_res, C, max_iterations, threshold, beta);
+		take_screenshot(8, "screenshot.tga");
+		get_points(mandelbrot_mode, grid_max, point_res, C, max_iterations, threshold, beta);
 		break;
 	}
 	case 'm':
+	{
+		get_points(mandelbrot_mode, grid_max, 50, C, max_iterations, threshold, beta);
+		take_screenshot(8, "screenshot.tga");
+		get_points(mandelbrot_mode, grid_max, point_res, C, max_iterations, threshold, beta);
+		break;
+	}
+	case 'b':
+	{
+		vector<float> betas = { -8, -7, -6, -5, -4, -3, 2, 3, 4, 5, 6, 7, 8 };
+
+		for (size_t i = 0; i < betas.size(); i++)
 		{
-			take_screenshot(8, 50, "screenshot.tga");
-			break;
+			ostringstream oss;
+			oss << betas[i];
+
+			string filename = "julia2d_" + oss.str() + ".tga";
+
+			cout << filename << endl;
+
+			get_points(false, grid_max, 20, C, max_iterations, threshold, betas[i]);
+			take_screenshot(8, filename.c_str());
+		}
+	
+		for (size_t i = 0; i < betas.size(); i++)
+		{
+			ostringstream oss;
+			oss << betas[i];
+
+			string filename = "mandelbrot2d_" + oss.str() + ".tga";
+
+			cout << filename << endl;
+
+			get_points(true, grid_max, 20, C, max_iterations, threshold, betas[i]);
+			take_screenshot(2, filename.c_str());
 		}
 
+		break;
+	}
 	default:
 		break;
 	}
 }
+
+
+
 
 void mouse_func(int button, int state, int x, int y)
 {
@@ -1007,6 +1171,50 @@ RGB HSBtoRGB(unsigned short int hue_degree, unsigned char sat_percent, unsigned 
 }
 
 
+void renderCylinder(float x1, float y1, float z1, float x2, float y2, float z2, float radius, int subdivisions)
+{
+	float vx = x2 - x1;
+	float vy = y2 - y1;
+	float vz = z2 - z1;
+	//handle the degenerate case with an approximation
+	if (vz == 0)
+		vz = .00000001;
+	float v = sqrt(vx * vx + vy * vy + vz * vz);
+	float ax = 57.2957795 * acos(vz / v);
+	if (vz < 0.0)
+		ax = -ax;
+	float rx = -vy * vz;
+	float ry = vx * vz;
+
+	GLUquadricObj* quadric = gluNewQuadric();
+	gluQuadricNormals(quadric, GLU_SMOOTH);
+
+	glPushMatrix();
+	glTranslatef(x1, y1, z1);
+	glRotatef(ax, rx, ry, 0.0);
+	//draw the cylinder
+	gluCylinder(quadric, radius, radius, v, 32, 1);
+	gluQuadricOrientation(quadric, GLU_INSIDE);
+	//draw the first cap
+	gluDisk(quadric, 0.0, radius, 32, 1);
+	glTranslatef(0, 0, v);
+	//draw the second cap
+	gluQuadricOrientation(quadric, GLU_OUTSIDE);
+	gluDisk(quadric, 0.0, radius, 32, 1);
+	glPopMatrix();
+
+	gluDeleteQuadric(quadric);
+}
+
+void draw_line(const vector_4 point_a, const vector_4 point_b, bool negate_x)
+{
+	renderCylinder(point_a.x, point_a.y, point_a.z, point_b.x, point_b.y, point_b.z, 0.05f, 20);
+
+	return;
+
+
+
+}
 
 
 // This render mode won't apply to a curved 3D space.
@@ -1033,7 +1241,6 @@ void draw_objects(bool disable_colouring)
 		glDisable(GL_LIGHTING);
 	}
 
-	static const float rad_to_deg = 180.0f / static_cast<float>(pi);
 
 	glPushMatrix();
 
@@ -1043,11 +1250,12 @@ void draw_objects(bool disable_colouring)
 	{
 
 
+		/*
 		for (size_t i = 0; i < pos.size(); i++)
 		{
 			for (size_t j = 0; j < pos[i].size() - 1; j++)
 			{
-				double t = j / static_cast<double>(pos[i].size() - 1);
+				double t = 0;// j / static_cast<double>(pos[i].size() - 1);
 
 				//set<vector_4> point_set;
 
@@ -1066,7 +1274,7 @@ void draw_objects(bool disable_colouring)
 				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
 
 				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
-
+				
 				vector_4 line = pos[i][j + 1] - pos[i][j];
 				glPushMatrix();
 				glTranslatef(static_cast<float>(pos[i][j].x), static_cast<float>(pos[i][j].y), 0);
@@ -1076,78 +1284,60 @@ void draw_objects(bool disable_colouring)
 
 				float yaw = 0.0f;
 
-				if (fabsf(static_cast<float>(line.x)) < 0.00001f && fabsf(static_cast<float>(line.z)) < 0.00001f)
+				if (fabsf(static_cast<float>(line.x)) < 0.00001f)
 					yaw = 0.0f;
 				else
-					yaw = atan2f(static_cast<float>(line.x), static_cast<float>(line.z));
+					yaw = atan2f(static_cast<float>(line.x), 0);
 
-				float pitch = -atan2f(static_cast<float>(line.y), static_cast<float>(sqrt(line.x * line.x + line.z * line.z)));
+				float pitch = -atan2f(static_cast<float>(line.y), static_cast<float>(sqrt(line.x * line.x)));
 
 				glRotatef(yaw * rad_to_deg, 0.0f, 1.0f, 0.0f);
 				glRotatef(pitch * rad_to_deg, 1.0f, 0.0f, 0.0f);
 
-				if (j == 0)
-					glutSolidSphere(0.005 * 1.5, 16, 16);
+//				if (j == 0)
+///					glutSolidSphere(0.005 * 1.5, 16, 16);
 
-				if (j < pos[i].size() - 2)
+				if (is_cycle[i] == true)
+				{
 					gluCylinder(glu_obj, 0.005, 0.005, line_len, 20, 2);
+				}
 				else
-					glutSolidCone(0.005 * 4, 0.005 * 8, 20, 20);
+				{
+					if (j < pos[i].size() - 2)
+						gluCylinder(glu_obj, 0.005, 0.005, line_len, 20, 2);
+					else
+						glutSolidCone(0.005 * 4, 0.005 * 8, 20, 20);
+				}
 
 				glPopMatrix();
 			}
 
 		}
-
-		
-
+		*/
 
 
-		//for (size_t i = 0; i < all_4d_points.size(); i++)
-		//{
-		//	for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
-		//	{
-		//		double t = j / static_cast<double>(all_4d_points[i].size() - 1);
 
-		//		RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
 
-		//		float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
+		for (size_t i = 0; i < all_4d_points.size(); i++)
+		{
+			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
+			{
+				double t = 1;// j / static_cast<double>(all_4d_points[i].size() - 1);
 
-		//		glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
+				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
 
-		//		vector_4 line = all_4d_points[i][j + 1] - all_4d_points[i][j];
+				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
 
-		//		glPushMatrix();
-		//		glTranslatef(static_cast<float>(all_4d_points[i][j].x), static_cast<float>(all_4d_points[i][j].y), 0);
+				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
 
-		//		float line_len = static_cast<float>(line.length());
-		//		//line.normalize();
-
-		//		float yaw = 0.0f;
-
-		//		if (fabsf(static_cast<float>(line.x)) < 0.00001f)
-		//			yaw = 0.0f;
-		//		else
-		//			yaw = atan2f(static_cast<float>(line.y), 0);
-
-		//		float pitch = -atan2f(static_cast<float>(line.y), static_cast<float>(sqrt(line.x * line.x)));
-
-		//		glRotatef(yaw * rad_to_deg, 0.0f, 1.0f, 0.0f);
-		//		glRotatef(pitch * rad_to_deg, 1.0f, 0.0f, 0.0f);
-
-		//		if (j == 0)
-		//			glutSolidSphere(0.005 * 1.5, 16, 16);
-
-		//		if (j < all_4d_points[i].size() - 2)
-		//			gluCylinder(glu_obj, 0.005, 0.005, line_len, 20, 2);
-		//		else
-		//			glutSolidCone(0.005 * 4, 0.005 * 8, 20, 20);
-		//		
-		//		glPopMatrix();
-		//	}
-
-		//}
-
+				if(j == 0)
+					draw_line(all_4d_points[i][j + 1], all_4d_points[i][j], true);
+				else
+					draw_line(all_4d_points[i][j + 1], all_4d_points[i][j], false);
+			}
+			
+			draw_line(all_4d_points[i][all_4d_points[i].size() - 1], all_4d_points[i][0], false);
+		}
 	}
 
 

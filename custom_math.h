@@ -116,7 +116,19 @@ public:
 
 		return false;
 	}
+
+	inline bool operator==(const vector_4& right) const
+	{
+		if (right.x == x && right.y == y && right.z == z && right.w == w)
+			return true;
+
+		return false;
+	}
+
+
 };
+
+
 
 
 class custom_math::line_segment_3
