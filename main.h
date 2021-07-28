@@ -505,7 +505,7 @@ const float exponent)
 	 get_isosurface(
 		mandelbrot,
 		grid_max,
-		500,
+		100,
 		C,
 		max_iterations,
 		threshold,
@@ -1231,13 +1231,11 @@ void draw_objects(bool disable_colouring)
 			{
 //				float colour[] = { 255 / 255.0f, 127 / 255.0f, 0 / 255.0f, 1.0f };
 
-				double t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_orbit_length);
+				float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_orbit_length);
 
-				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
+				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.0f * t), 75, 100);
 
 				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
-
-
 
 				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
 
