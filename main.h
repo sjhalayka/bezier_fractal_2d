@@ -46,7 +46,7 @@ size_t max_orbit_length = 0;
 
 float grid_max = 1.5;
 complex<float> C(0.2f, 0.5f);
-unsigned short int max_iterations = 2000;
+unsigned short int max_iterations = 5000;
 float threshold = 4.0;
 float beta = 2.0f;
 bool mandelbrot_mode = true;
@@ -1005,7 +1005,7 @@ void passive_motion_func(int x, int y)
 
 
 
-void renderCylinder(float x1, float y1, float z1, float x2, float y2, float z2, float radius, int subdivisions)
+void renderCylinder(float x1, float y1, float z1, float x2, float y2, float z2, float radius)
 {
 	float vx = x2 - x1;
 	float vy = y2 - y1;
@@ -1020,29 +1020,21 @@ void renderCylinder(float x1, float y1, float z1, float x2, float y2, float z2, 
 	float rx = -vy * vz;
 	float ry = vx * vz;
 
-	GLUquadricObj* quadric = gluNewQuadric();
-	gluQuadricNormals(quadric, GLU_SMOOTH);
+//	gluQuadricNormals(glu_obj, GLU_SMOOTH);
 
 	glPushMatrix();
-	glTranslatef(x1, y1, z1);
-	glRotatef(ax, rx, ry, 0.0);
-	//draw the cylinder
-	gluCylinder(quadric, radius, radius, v, 32, 1);
-	gluQuadricOrientation(quadric, GLU_INSIDE);
-	//draw the first cap
-	gluDisk(quadric, 0.0, radius, 32, 1);
-	glTranslatef(0, 0, v);
-	//draw the second cap
-	gluQuadricOrientation(quadric, GLU_OUTSIDE);
-	gluDisk(quadric, 0.0, radius, 32, 1);
-	glPopMatrix();
 
-	gluDeleteQuadric(quadric);
+		glTranslatef(x1, y1, z1);
+		glRotatef(ax, rx, ry, 0.0);
+
+		gluCylinder(glu_obj, radius, radius, v, 32, 1);
+
+	glPopMatrix();
 }
 
 void draw_line(const vector_4 point_a, const vector_4 point_b)
 {
-	renderCylinder(point_a.x, point_a.y, point_a.z, point_b.x, point_b.y, point_b.z, 0.001f, 20);
+	renderCylinder(point_a.x, point_a.y, point_a.z, point_b.x, point_b.y, point_b.z, 0.001f);
 
 	return;
 
@@ -1229,8 +1221,6 @@ void draw_objects(bool disable_colouring)
 		{
 			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
 			{
-//				float colour[] = { 255 / 255.0f, 127 / 255.0f, 0 / 255.0f, 1.0f };
-
 				float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_orbit_length);
 
 				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.0f * t), 75, 100);
