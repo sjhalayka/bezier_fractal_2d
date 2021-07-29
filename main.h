@@ -145,7 +145,7 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 	const float threshold,
 	const float exponent)
 {
-	C = Z;// complex<float>(-0.1258695628494024, 0.7545827310532331);// Z;
+	C = Z;// complex<float>(1.0, 1.0);// Z;
 	Z = complex<float>(0, 0);
 
 	trajectory_points.clear();
@@ -456,6 +456,7 @@ const float exponent)
 		{
 			is_cycle[i] = true;
 
+			if(point_set.size() > 1)
 			all_4d_points[i].erase(all_4d_points[i].begin(), all_4d_points[i].begin() + (all_4d_points[i].size() / 10 + 1));// push_back(all_4d_points[i][0]);
 			orbit_count++;
 		}
@@ -481,13 +482,13 @@ const float exponent)
 
 		//sort(new_points.begin(), new_points.end());
 
-		cout << endl;
-		cout << endl;
+	//	cout << endl;
+	//	cout << endl;
 
-		cout << all_4d_points[i].size() << endl;
+	//	cout << all_4d_points[i].size() << endl;
 		all_4d_points[i] = new_points;
-		cout << all_4d_points[i].size() << endl;
-		cout << endl;
+	//	cout << all_4d_points[i].size() << endl;
+	//	cout << endl;
 
 		if (all_4d_points[i].size() > max_orbit_length)
 			max_orbit_length = all_4d_points[i].size();
@@ -497,7 +498,19 @@ const float exponent)
 	cout << "trajectory count " << all_4d_points.size() << endl;
 
 
+	set<size_t> all_sizes;
 
+	for (size_t i = 0; i < all_4d_points.size(); i++)
+	{
+		all_sizes.insert(all_4d_points[i].size());
+	}
+
+	for (set<size_t>::const_iterator ci = all_sizes.begin(); ci != all_sizes.end(); ci++)
+	{
+		cout << *ci << endl;
+	}
+
+	cout << endl;
 
 
 
@@ -505,7 +518,7 @@ const float exponent)
 	 get_isosurface(
 		mandelbrot,
 		grid_max,
-		100,
+		10,
 		C,
 		max_iterations,
 		threshold,
@@ -1216,9 +1229,11 @@ void draw_objects(bool disable_colouring)
 
 
 
-
 		for (size_t i = 0; i < all_4d_points.size(); i++)
 		{
+//			if (5001 != all_4d_points[i].size())// false == is_cycle[i])
+//				continue;
+
 			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
 			{
 				float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_orbit_length);
