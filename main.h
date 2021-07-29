@@ -145,7 +145,7 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 	const float threshold,
 	const float exponent)
 {
-	C = Z;// complex<float>(1.0, 1.0);// Z;
+	C = complex<float>(1.0, 1.0);// Z;
 	Z = complex<float>(0, 0);
 
 	trajectory_points.clear();
