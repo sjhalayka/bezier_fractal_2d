@@ -17,7 +17,6 @@ using namespace custom_math;
 
 #include "marching_squares.h"
 
-#include "graph.h"
 
 #include <fstream>
 using std::ofstream;
