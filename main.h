@@ -145,7 +145,7 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 	const float threshold,
 	const float exponent)
 {
-	C = complex<float>(1.0, 1.0);// Z;
+	C = Z;// complex<float>(1.0, 1.0);// Z;
 	Z = complex<float>(0, 0);
 
 	trajectory_points.clear();
@@ -1231,8 +1231,8 @@ void draw_objects(bool disable_colouring)
 
 		for (size_t i = 0; i < all_4d_points.size(); i++)
 		{
-//			if (5001 != all_4d_points[i].size())// false == is_cycle[i])
-//				continue;
+			if ( false == is_cycle[i])
+				continue;
 
 			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
 			{
