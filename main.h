@@ -44,10 +44,10 @@ size_t point_res = 25;
 size_t max_orbit_length = 0;
 
 float grid_max = 1.5;
-complex<float> C(0.2f, 0.5f);
+complex<float> C(0.2f, 0.5f); // For Julia set only
 unsigned short int max_iterations = 5000;
 float threshold = 4.0;
-float beta = 2.0f;
+float beta = 1.5f;
 bool mandelbrot_mode = true;
 
 vector_3 background_colour(1.0, 1.0, 1.0);
@@ -117,6 +117,9 @@ float mesh_solid[] = { 0.0f, 0.5f, 1.0f, 1.0f };
 
 complex<float> pow_complex(const complex<float>& in, const float beta)
 {
+	return std::pow(in, beta);
+
+/*
 	float fabs_beta = fabsf(beta);
 
 	float self_dot = in.real() * in.real() + in.imag() * in.imag();
@@ -135,6 +138,7 @@ complex<float> pow_complex(const complex<float>& in, const float beta)
 		out = conj(out) / powf(abs(out), 2.0f);
 
 	return out;
+	*/
 }
 
 float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
@@ -144,7 +148,7 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 	const float threshold,
 	const float exponent)
 {
-	C = Z;// complex<float>(1.0, 1.0);// Z;
+	C = Z;// complex<float>(-7.0 / 4.0, 0.0);// Z;
 	Z = complex<float>(0, 0);
 
 	trajectory_points.clear();
@@ -517,7 +521,7 @@ const float exponent)
 	 get_isosurface(
 		mandelbrot,
 		grid_max,
-		10,
+		100,
 		C,
 		max_iterations,
 		threshold,
@@ -1226,12 +1230,18 @@ void draw_objects(bool disable_colouring)
 
 
 
-
+//		cout << all_4d_points.size() << endl;
 
 		for (size_t i = 0; i < all_4d_points.size(); i++)
 		{
-			if ( false == is_cycle[i])
+			if (false == is_cycle[i])
+			{
+				//cout << i << " " << all_4d_points.size() << endl;
+
+				//cout << all_4d_points[i][1].x << " " << all_4d_points[i][1].y << endl;
+				//cout << endl;
 				continue;
+			}
 
 			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
 			{
