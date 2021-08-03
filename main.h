@@ -172,10 +172,10 @@ iterator_return_values iterate_mandelbrot_2d(vector< complex<float> >& trajector
 		Z = pow_complex(Z, exponent);
 		Z += C;
 
-		float deriv = exponent * abs(pow(Z, exponent - 1.0f));
+		complex<float> deriv = pow(Z, exponent - 1.0f) * exponent;
 
-		if(deriv != 0)
-			lyapunov += log(deriv);
+		if(abs(deriv) != 0)
+			lyapunov += log(abs(deriv));
 
 		trajectory_points.push_back(Z);
 
@@ -454,7 +454,7 @@ const float exponent)
 		{
 			iterator_return_values val = iterate_2d(mandelbrot, trajectory_points, Z, C, max_iterations, threshold, exponent);
 
-			if (val.magnitude < threshold)
+			if (val.magnitude > threshold)
 			{
 				vector<vector_4> v;
 
