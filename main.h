@@ -46,7 +46,7 @@ size_t max_orbit_length = 0;
 
 float grid_max = 1.5;
 complex<float> C(0.2f, 0.5f); // For Julia set only
-unsigned short int max_iterations = 500;
+unsigned short int max_iterations = 5000;
 float threshold = 4.0;
 float beta = 2.0f;
 bool mandelbrot_mode = true;
@@ -454,7 +454,7 @@ const float exponent)
 		{
 			iterator_return_values val = iterate_2d(mandelbrot, trajectory_points, Z, C, max_iterations, threshold, exponent);
 
-			if (val.magnitude > threshold)
+			if (val.magnitude < threshold)
 			{
 				vector<vector_4> v;
 
@@ -1267,24 +1267,28 @@ void draw_objects(bool disable_colouring)
 	if (draw_curves)
 	{
 
-		set<float> lps;
+		//set<float> lps;
 
-		for (size_t i = 0; i < lyapunov_exponents.size(); i++)
-			lps.insert(lyapunov_exponents[i]);
+		//for (size_t i = 0; i < lyapunov_exponents.size(); i++)
+		//	lps.insert(lyapunov_exponents[i]);
 
-		cout << "size: " << lps.size() << endl;
+		//cout << "size: " << lps.size() << endl;
 
-		for (set<float>::const_iterator ci = lps.begin(); ci != lps.end(); ci++)
-		{
-			cout << *ci << endl;
-		}
+		//for (set<float>::const_iterator ci = lps.begin(); ci != lps.end(); ci++)
+		//{
+		//	cout << *ci << endl;
+		//}
 
-		cout << endl;
+		//cout << endl;
 
 		for (size_t i = 0; i < all_4d_points.size(); i++)
 		{
-			if (0)//false == is_cycle[i])
+			//if (lyapunov_exponents[i] == 0)
+			//	cout << all_4d_points[i].size() << endl;
+
+			if (false == is_cycle[i])
 			{
+				cout << "non cycle " << lyapunov_exponents[i] << endl;
 				//cout << i << " " << all_4d_points.size() << endl;
 
 				//cout << all_4d_points[i][1].x << " " << all_4d_points[i][1].y << endl;
@@ -1294,7 +1298,7 @@ void draw_objects(bool disable_colouring)
 
 			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
 			{
-				float t = 1;// (lyapunov_exponents[i]) / (max_lyapunov_exponent);// static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_orbit_length);
+				float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_iterations);
 
 				//t = pow(t, 2.0);
 
