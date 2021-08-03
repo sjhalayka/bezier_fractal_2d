@@ -43,11 +43,12 @@ using std::unordered_set;
 size_t point_res = 25;
 size_t max_orbit_length = 0;
 
+
 float grid_max = 1.5;
 complex<float> C(0.2f, 0.5f); // For Julia set only
-unsigned short int max_iterations = 5000;
+unsigned short int max_iterations = 500;
 float threshold = 4.0;
-float beta = 1.5f;
+float beta = 2.0f;
 bool mandelbrot_mode = true;
 
 vector_3 background_colour(1.0, 1.0, 1.0);
@@ -96,12 +97,12 @@ void draw_objects(bool disable_colouring = false);
 
 const float rad_to_deg = 180.0f / static_cast<float>(pi);
 
-	
+
 
 vector<vector<vector_4>> all_4d_points;
 
 vector<bool> is_cycle;
-
+vector<float> lyapunov_exponents;
 
 
 
@@ -113,6 +114,16 @@ vector<vertex_3> vertex_normals;
 float mesh_transparent[] = { 0.0f, 0.5f, 1.0f, 0.2f };
 float mesh_solid[] = { 0.0f, 0.5f, 1.0f, 1.0f };
 
+
+
+
+
+class iterator_return_values
+{
+public:
+	float magnitude = 0;
+	float lyupanov = 0;
+};
 
 
 complex<float> pow_complex(const complex<float>& in, const float beta)
@@ -141,23 +152,30 @@ complex<float> pow_complex(const complex<float>& in, const float beta)
 	*/
 }
 
-float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
+iterator_return_values iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 	complex<float> Z,
 	complex<float> C,
 	const short unsigned int max_iterations,
 	const float threshold,
 	const float exponent)
 {
-	C = Z;// complex<float>(-7.0 / 4.0, 0.0);// Z;
+	C = Z;
 	Z = complex<float>(0, 0);
 
 	trajectory_points.clear();
-	trajectory_points.push_back(Z);
+//	trajectory_points.push_back(Z);
+
+	float lyapunov = 0;
 
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
 		Z = pow_complex(Z, exponent);
 		Z += C;
+
+		float deriv = exponent * abs(pow(Z, exponent - 1.0f));
+
+		if(deriv != 0)
+			lyapunov += log(deriv);
 
 		trajectory_points.push_back(Z);
 
@@ -165,14 +183,20 @@ float iterate_mandelbrot_2d(vector< complex<float> >& trajectory_points,
 			break;
 	}
 
-	return abs(Z);
+	lyapunov /= max_iterations;
+
+	iterator_return_values val;
+	val.magnitude = abs(Z);
+	val.lyupanov = lyapunov;
+
+	return val;
 }
 
 
 
 
 
-float iterate_julia_2d(vector< complex<float> >& trajectory_points,
+iterator_return_values iterate_julia_2d(vector< complex<float> >& trajectory_points,
 	complex<float> Z,
 	const complex<float> C,
 	const short unsigned int max_iterations,
@@ -193,11 +217,15 @@ float iterate_julia_2d(vector< complex<float> >& trajectory_points,
 			break;
 	}
 
-	return abs(Z);
+	iterator_return_values val;
+	val.magnitude = abs(Z);
+	val.lyupanov = 0; // to be added in later
+
+	return val;
 }
 
 
-float iterate_2d(bool mandelbrot,
+iterator_return_values iterate_2d(bool mandelbrot,
 	vector< complex<float> >& trajectory_points,
 	complex<float> Z,
 	const complex<float> C,
@@ -346,7 +374,7 @@ void get_isosurface(
 
 		for (size_t y = 0; y < y_res; y++, Z += y_step_size)
 		{
-			image[x_res * y + x] = iterate_2d(mandelbrot, trajectory_points, Z, C, max_iterations, threshold, exponent);
+			image[x_res * y + x] = iterate_2d(mandelbrot, trajectory_points, Z, C, max_iterations, threshold, exponent).magnitude;
 
 			if (image[x_res * y + x] > threshold*2.0f)
 				image[x_res * y + x] = threshold*2.0f;
@@ -419,14 +447,14 @@ const float exponent)
 	vector< complex<float> > trajectory_points;
 
 	for (size_t x = 0; x < x_res; x++, Z += x_step_size)
-	{
+	{ 
 		Z = complex<float>(Z.real(), y_grid_min);
 
 		for (size_t y = 0; y < y_res; y++, Z += y_step_size)
 		{
-			float magnitude = iterate_2d(mandelbrot, trajectory_points, Z, C, max_iterations, threshold, exponent);
+			iterator_return_values val = iterate_2d(mandelbrot, trajectory_points, Z, C, max_iterations, threshold, exponent);
 
-			if (magnitude < threshold)
+			if (val.magnitude < threshold)
 			{
 				vector<vector_4> v;
 
@@ -439,9 +467,16 @@ const float exponent)
 				}
 
 				all_4d_points.push_back(v);
+				lyapunov_exponents.push_back(val.lyupanov);
 			}
 		}
 	}
+
+
+
+
+
+
 
 
 	size_t orbit_count = 0;
@@ -501,7 +536,7 @@ const float exponent)
 	cout << "trajectory count " << all_4d_points.size() << endl;
 
 
-	set<size_t> all_sizes;
+	/*set<size_t> all_sizes;
 
 	for (size_t i = 0; i < all_4d_points.size(); i++)
 	{
@@ -514,6 +549,11 @@ const float exponent)
 	}
 
 	cout << endl;
+*/
+
+
+
+
 
 
 
@@ -1227,14 +1267,23 @@ void draw_objects(bool disable_colouring)
 	if (draw_curves)
 	{
 
+		set<float> lps;
 
+		for (size_t i = 0; i < lyapunov_exponents.size(); i++)
+			lps.insert(lyapunov_exponents[i]);
 
+		cout << "size: " << lps.size() << endl;
 
-//		cout << all_4d_points.size() << endl;
+		for (set<float>::const_iterator ci = lps.begin(); ci != lps.end(); ci++)
+		{
+			cout << *ci << endl;
+		}
+
+		cout << endl;
 
 		for (size_t i = 0; i < all_4d_points.size(); i++)
 		{
-			if (false == is_cycle[i])
+			if (0)//false == is_cycle[i])
 			{
 				//cout << i << " " << all_4d_points.size() << endl;
 
@@ -1245,9 +1294,11 @@ void draw_objects(bool disable_colouring)
 
 			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
 			{
-				float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_orbit_length);
+				float t = 1;// (lyapunov_exponents[i]) / (max_lyapunov_exponent);// static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_orbit_length);
 
-				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.0f * t), 75, 100);
+				//t = pow(t, 2.0);
+
+				RGB rgb = HSBtoRGB(static_cast<unsigned short>(t*300.0f), 75, 100);
 
 				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
 
