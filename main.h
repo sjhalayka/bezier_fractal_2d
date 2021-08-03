@@ -206,10 +206,17 @@ iterator_return_values iterate_julia_2d(vector< complex<float> >& trajectory_poi
 	trajectory_points.clear();
 	trajectory_points.push_back(Z);
 
+	float lyapunov = 0;
+
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
 		Z = pow_complex(Z, exponent);
 		Z += C;
+
+		complex<float> deriv = pow(Z, exponent - 1.0f) * exponent;
+
+		if (abs(deriv) != 0)
+			lyapunov += log(abs(deriv));
 
 		trajectory_points.push_back(Z);
 
@@ -217,9 +224,11 @@ iterator_return_values iterate_julia_2d(vector< complex<float> >& trajectory_poi
 			break;
 	}
 
+	lyapunov /= max_iterations;
+
 	iterator_return_values val;
 	val.magnitude = abs(Z);
-	val.lyupanov = 0; // to be added in later
+	val.lyupanov = lyapunov;
 
 	return val;
 }
