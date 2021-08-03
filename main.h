@@ -163,16 +163,21 @@ iterator_return_values iterate_mandelbrot_2d(vector< complex<float> >& trajector
 	Z = complex<float>(0, 0);
 
 	trajectory_points.clear();
-//	trajectory_points.push_back(Z);
+	trajectory_points.push_back(Z);
 
 	float lyapunov = 0;
+
+	complex<float> deriv = pow(Z, exponent - 1.0f) * exponent;
+
+	if (abs(deriv) != 0)
+		lyapunov += log(abs(deriv));
 
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
 		Z = pow_complex(Z, exponent);
 		Z += C;
 
-		complex<float> deriv = pow(Z, exponent - 1.0f) * exponent;
+		deriv = pow(Z, exponent - 1.0f) * exponent;
 
 		if(abs(deriv) != 0)
 			lyapunov += log(abs(deriv));
@@ -183,7 +188,7 @@ iterator_return_values iterate_mandelbrot_2d(vector< complex<float> >& trajector
 			break;
 	}
 
-	lyapunov /= max_iterations;
+	lyapunov /= trajectory_points.size();
 
 	iterator_return_values val;
 	val.magnitude = abs(Z);
@@ -208,12 +213,17 @@ iterator_return_values iterate_julia_2d(vector< complex<float> >& trajectory_poi
 
 	float lyapunov = 0;
 
+	complex<float> deriv = pow(Z, exponent - 1.0f) * exponent;
+
+	if (abs(deriv) != 0)
+		lyapunov += log(abs(deriv));
+
 	for (short unsigned int i = 0; i < max_iterations; i++)
 	{
 		Z = pow_complex(Z, exponent);
 		Z += C;
 
-		complex<float> deriv = pow(Z, exponent - 1.0f) * exponent;
+		deriv = pow(Z, exponent - 1.0f) * exponent;
 
 		if (abs(deriv) != 0)
 			lyapunov += log(abs(deriv));
@@ -224,7 +234,7 @@ iterator_return_values iterate_julia_2d(vector< complex<float> >& trajectory_poi
 			break;
 	}
 
-	lyapunov /= max_iterations;
+	lyapunov /= trajectory_points.size();
 
 	iterator_return_values val;
 	val.magnitude = abs(Z);
