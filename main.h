@@ -44,8 +44,6 @@ using namespace std;
 #include <set>
 using std::set;
 
-#include <unordered_set>
-using std::unordered_set;
 
 size_t point_res = 25;
 size_t max_orbit_length = 0;
@@ -579,8 +577,11 @@ const float exponent)
 		for (size_t j = 0; j < all_4d_points[i].size(); j++)
 			curve->add_way_point(Vector(all_4d_points[i][j].x, all_4d_points[i][j].y, 0));
 
-		for (size_t j = 0; j < all_4d_points[i].size(); j++)
-			curve->add_way_point(Vector(all_4d_points[i][j].x, all_4d_points[i][j].y, 0));
+		if (is_cycle[i])
+		{
+			for (size_t j = 0; j < all_4d_points[i].size(); j++)
+				curve->add_way_point(Vector(all_4d_points[i][j].x, all_4d_points[i][j].y, 0));
+		}
 
 		vector<vector_4> p;
 
@@ -1314,8 +1315,13 @@ void draw_objects(bool disable_colouring)
 
 		for (size_t i = 0; i < pos.size(); i++)
 		{
+
+			//if (true == is_cycle[i])
+			//	continue;
+
 			for (size_t j = 0; j < pos[i].size() - 1; j++)
 			{
+
 				//double t = j / static_cast<double>(pos[i].size() - 1);
 
 				// float t = static_cast<float>(pos[i].size()) / static_cast<float>(max_iterations);
