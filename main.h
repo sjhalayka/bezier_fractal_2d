@@ -170,7 +170,7 @@ iterator_return_values iterate_mandelbrot_2d(vector< complex<float> >& trajector
 	const float threshold,
 	const float exponent)
 {
-	C = complex<float>(-0.5071707945317030, 0.5646878089755774);// Z;
+	C = Z;// complex<float>(-0.3930037729442120, 0.5866060592234135);// Z;
 	Z = complex<float>(0, 0);
 
 	trajectory_points.clear();
@@ -587,8 +587,10 @@ const float exponent)
 		for (int i = 0; i < curve->node_count(); i++)
 			p.push_back(vector_4(curve->node(i).x, curve->node(i).y, 0, 0));
 
-		if(p.size() != 0)
-			pos.push_back(p);
+		if (p.size() == 0)
+			p.push_back(all_4d_points[i][0]);
+			
+		pos.push_back(p);
 
 		delete curve;
 	}
@@ -1314,7 +1316,11 @@ void draw_objects(bool disable_colouring)
 		{
 			for (size_t j = 0; j < pos[i].size() - 1; j++)
 			{
-				double t = j / static_cast<double>(pos[i].size() - 1);
+				//double t = j / static_cast<double>(pos[i].size() - 1);
+
+				// float t = static_cast<float>(pos[i].size()) / static_cast<float>(max_iterations);
+
+				float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_iterations);
 
 				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
 
@@ -1322,6 +1328,7 @@ void draw_objects(bool disable_colouring)
 
 				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
 
+				vector_4 line = pos[i][j + 1] - pos[i][j];
 
 				draw_line(pos[i][j + 1], pos[i][j]);
 			}
@@ -1343,42 +1350,39 @@ void draw_objects(bool disable_colouring)
 
 		//cout << endl;
 
+		//for (size_t i = 0; i < all_4d_points.size(); i++)
+		//{
+		//	//if (lyapunov_exponents[i] == 0)
+		//	//	cout << all_4d_points[i].size() << endl;
 
+		//	if (false == is_cycle[i])
+		//	{
+		//		//cout << "non cycle " << lyapunov_exponents[i] << endl;
+		//		//cout << i << " " << all_4d_points.size() << endl;
 
+		//		//cout << all_4d_points[i][1].x << " " << all_4d_points[i][1].y << endl;
+		//		//cout << endl;
+		//		continue;
+		//	}
 
-		for (size_t i = 0; i < all_4d_points.size(); i++)
-		{
-			//if (lyapunov_exponents[i] == 0)
-			//	cout << all_4d_points[i].size() << endl;
+		//	for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
+		//	{
+		//		float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_iterations);
 
-			if (false == is_cycle[i])
-			{
-				//cout << "non cycle " << lyapunov_exponents[i] << endl;
-				//cout << i << " " << all_4d_points.size() << endl;
+		//		//t = pow(t, 2.0);
 
-				//cout << all_4d_points[i][1].x << " " << all_4d_points[i][1].y << endl;
-				//cout << endl;
-				continue;
-			}
+		//		RGB rgb = HSBtoRGB(static_cast<unsigned short>(t*300.0f), 75, 100);
 
-			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
-			{
-				float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_iterations);
+		//		float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
 
-				//t = pow(t, 2.0);
+		//		glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
 
-				RGB rgb = HSBtoRGB(static_cast<unsigned short>(t*300.0f), 75, 100);
-
-				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
-
-				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
-
-				draw_line(all_4d_points[i][j + 1], all_4d_points[i][j]);
-			}
-			
-			if(is_cycle[i])
-				draw_line(all_4d_points[i][all_4d_points[i].size() - 1], all_4d_points[i][0]);
-		}
+		//		draw_line(all_4d_points[i][j + 1], all_4d_points[i][j]);
+		//	}
+		//	
+		//	if(is_cycle[i])
+		//		draw_line(all_4d_points[i][all_4d_points[i].size() - 1], all_4d_points[i][0]);
+		//}
 	}
 
 
