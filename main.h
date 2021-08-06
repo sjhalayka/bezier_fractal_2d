@@ -23,7 +23,7 @@ using namespace custom_math;
 #include "bspline_library/BSpline.h"
 #include "bspline_library/CatmullRom.h"
 
-
+#include <ctime>
 
 #include <fstream>
 using std::ofstream;
@@ -104,9 +104,27 @@ const float rad_to_deg = 180.0f / static_cast<float>(pi);
 
 
 
+
+class iterator_return_values
+{
+public:
+	float magnitude = 0;
+	float lyupanov = 0;
+};
+
+class RGB
+{
+public:
+	unsigned char r, g, b;
+};
+
+
+
+
+
 vector<vector<vector_4>> all_4d_points;
 vector<vector<vector_4> > pos;
-
+vector<RGB> colours;
 
 
 
@@ -124,15 +142,6 @@ float mesh_transparent[] = { 0.0f, 0.5f, 1.0f, 0.2f };
 float mesh_solid[] = { 0.0f, 0.5f, 1.0f, 1.0f };
 
 
-
-
-
-class iterator_return_values
-{
-public:
-	float magnitude = 0;
-	float lyupanov = 0;
-};
 
 
 complex<float> pow_complex(const complex<float>& in, const float beta)
@@ -460,6 +469,7 @@ const float exponent)
 {
 	all_4d_points.clear();
 	pos.clear();
+	colours.clear();
 
 	const float x_grid_max = grid_max;
 	const float x_grid_min = -x_grid_max;
@@ -571,15 +581,23 @@ const float exponent)
 
 	for (size_t i = 0; i < all_4d_points.size(); i++)
 	{
+		RGB r;
+		r.r = rand() % 256;
+		r.g = rand() % 256;
+		r.b = rand() % 256;
+
+		colours.push_back(r);
+
 		Curve* curve = new CatmullRom();
 		curve->set_steps(10);
 
 		for (size_t j = 0; j < all_4d_points[i].size(); j++)
 			curve->add_way_point(Vector(all_4d_points[i][j].x, all_4d_points[i][j].y, 0));
 
-		if (is_cycle[i])
+		// Close the loop if this trajectory is aperiodic
+		if (is_cycle[i] && all_4d_points[i].size() > 3)
 		{
-			for (size_t j = 0; j < all_4d_points[i].size(); j++)
+			for (size_t j = 0; j < 3; j++)
 				curve->add_way_point(Vector(all_4d_points[i][j].x, all_4d_points[i][j].y, 0));
 		}
 
@@ -1107,7 +1125,7 @@ void passive_motion_func(int x, int y)
 
 
 
-void renderCylinder(float x1, float y1, float z1, float x2, float y2, float z2, float radius)
+void renderCylinder(float x1, float y1, float z1, float x2, float y2, float z2, float radius, bool draw_arrow)
 {
 	float vx = x2 - x1;
 	float vy = y2 - y1;
@@ -1131,12 +1149,15 @@ void renderCylinder(float x1, float y1, float z1, float x2, float y2, float z2, 
 
 		gluCylinder(glu_obj, radius, radius, v, 32, 1);
 
+		//if(draw_arrow)
+		//glutSolidCone(0.005 * 4, 0.005 * 8, 20, 20);
+
 	glPopMatrix();
 }
 
-void draw_line(const vector_4 point_a, const vector_4 point_b)
+void draw_line(const vector_4 point_a, const vector_4 point_b, bool draw_arrow)
 {
-	renderCylinder(point_a.x, point_a.y, point_a.z, point_b.x, point_b.y, point_b.z, 0.001f);
+	renderCylinder(point_a.x, point_a.y, point_a.z, point_b.x, point_b.y, point_b.z, 0.001f, draw_arrow);
 
 	return;
 
@@ -1147,11 +1168,7 @@ void draw_line(const vector_4 point_a, const vector_4 point_b)
 
 
 
-class RGB
-{
-public:
-	unsigned char r, g, b;
-};
+
 
 RGB HSBtoRGB(unsigned short int hue_degree, unsigned char sat_percent, unsigned char bri_percent)
 {
@@ -1316,8 +1333,8 @@ void draw_objects(bool disable_colouring)
 		for (size_t i = 0; i < pos.size(); i++)
 		{
 
-			//if (true == is_cycle[i])
-			//	continue;
+//			if (true == is_cycle[i])
+	//			continue;
 
 			for (size_t j = 0; j < pos[i].size() - 1; j++)
 			{
@@ -1328,15 +1345,16 @@ void draw_objects(bool disable_colouring)
 
 				float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_iterations);
 
-				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
+				RGB rgb = colours[i];// HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
 
 				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
 
 				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
 
-				vector_4 line = pos[i][j + 1] - pos[i][j];
-
-				draw_line(pos[i][j + 1], pos[i][j]);
+		//		if(j % 10 == 0)
+					draw_line(pos[i][j + 1], pos[i][j], true);
+//				else
+	//				draw_line(pos[i][j + 1], pos[i][j], false);
 			}
 
 		}
@@ -1356,39 +1374,39 @@ void draw_objects(bool disable_colouring)
 
 		//cout << endl;
 
-		//for (size_t i = 0; i < all_4d_points.size(); i++)
-		//{
-		//	//if (lyapunov_exponents[i] == 0)
-		//	//	cout << all_4d_points[i].size() << endl;
+		for (size_t i = 0; i < all_4d_points.size(); i++)
+		{
+			//if (lyapunov_exponents[i] == 0)
+			//	cout << all_4d_points[i].size() << endl;
 
-		//	if (false == is_cycle[i])
-		//	{
-		//		//cout << "non cycle " << lyapunov_exponents[i] << endl;
-		//		//cout << i << " " << all_4d_points.size() << endl;
+			if (false == is_cycle[i])
+			{
+				//cout << "non cycle " << lyapunov_exponents[i] << endl;
+				//cout << i << " " << all_4d_points.size() << endl;
 
-		//		//cout << all_4d_points[i][1].x << " " << all_4d_points[i][1].y << endl;
-		//		//cout << endl;
-		//		continue;
-		//	}
+				//cout << all_4d_points[i][1].x << " " << all_4d_points[i][1].y << endl;
+				//cout << endl;
+				continue;
+			}
 
-		//	for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
-		//	{
-		//		float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_iterations);
+			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
+			{
+				float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_iterations);
 
-		//		//t = pow(t, 2.0);
+				//t = pow(t, 2.0);
 
-		//		RGB rgb = HSBtoRGB(static_cast<unsigned short>(t*300.0f), 75, 100);
+				RGB rgb = HSBtoRGB(static_cast<unsigned short>(t*300.0f), 75, 100);
 
-		//		float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
+				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
 
-		//		glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
+				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
 
-		//		draw_line(all_4d_points[i][j + 1], all_4d_points[i][j]);
-		//	}
-		//	
-		//	if(is_cycle[i])
-		//		draw_line(all_4d_points[i][all_4d_points[i].size() - 1], all_4d_points[i][0]);
-		//}
+				draw_line(all_4d_points[i][j + 1], all_4d_points[i][j], false);
+			}
+			
+			if(is_cycle[i])
+				draw_line(all_4d_points[i][all_4d_points[i].size() - 1], all_4d_points[i][0], false);
+		}
 	}
 
 

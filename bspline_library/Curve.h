@@ -1,3 +1,7 @@
+// https://github.com/chen0040/cpp-spline
+
+
+
 #ifndef _H__CURVE_H
 #define _H__CURVE_H
 
