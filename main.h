@@ -1339,13 +1339,14 @@ void draw_objects(bool disable_colouring)
 			for (size_t j = 0; j < pos[i].size() - 1; j++)
 			{
 
-				//double t = j / static_cast<double>(pos[i].size() - 1);
+				float t = j / static_cast<float>(pos[i].size() - 1);
 
 				// float t = static_cast<float>(pos[i].size()) / static_cast<float>(max_iterations);
 
-				float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_iterations);
+				//float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_iterations);
 
-				RGB rgb = colours[i];// HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
+				//RGB rgb = colours[i];
+				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
 
 				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
 
@@ -1374,39 +1375,42 @@ void draw_objects(bool disable_colouring)
 
 		//cout << endl;
 
-		for (size_t i = 0; i < all_4d_points.size(); i++)
-		{
-			//if (lyapunov_exponents[i] == 0)
-			//	cout << all_4d_points[i].size() << endl;
 
-			if (false == is_cycle[i])
-			{
-				//cout << "non cycle " << lyapunov_exponents[i] << endl;
-				//cout << i << " " << all_4d_points.size() << endl;
 
-				//cout << all_4d_points[i][1].x << " " << all_4d_points[i][1].y << endl;
-				//cout << endl;
-				continue;
-			}
 
-			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
-			{
-				float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_iterations);
+		//for (size_t i = 0; i < all_4d_points.size(); i++)
+		//{
+		//	//if (lyapunov_exponents[i] == 0)
+		//	//	cout << all_4d_points[i].size() << endl;
 
-				//t = pow(t, 2.0);
+		//	if (false == is_cycle[i])
+		//	{
+		//		//cout << "non cycle " << lyapunov_exponents[i] << endl;
+		//		//cout << i << " " << all_4d_points.size() << endl;
 
-				RGB rgb = HSBtoRGB(static_cast<unsigned short>(t*300.0f), 75, 100);
+		//		//cout << all_4d_points[i][1].x << " " << all_4d_points[i][1].y << endl;
+		//		//cout << endl;
+		//		continue;
+		//	}
 
-				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
+		//	for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
+		//	{
+		//		float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_iterations);
 
-				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
+		//		//t = pow(t, 2.0);
 
-				draw_line(all_4d_points[i][j + 1], all_4d_points[i][j], false);
-			}
-			
-			if(is_cycle[i])
-				draw_line(all_4d_points[i][all_4d_points[i].size() - 1], all_4d_points[i][0], false);
-		}
+		//		RGB rgb = HSBtoRGB(static_cast<unsigned short>(t*300.0f), 75, 100);
+
+		//		float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
+
+		//		glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
+
+		//		draw_line(all_4d_points[i][j + 1], all_4d_points[i][j], false);
+		//	}
+		//	
+		//	if(is_cycle[i])
+		//		draw_line(all_4d_points[i][all_4d_points[i].size() - 1], all_4d_points[i][0], false);
+		//}
 	}
 
 
