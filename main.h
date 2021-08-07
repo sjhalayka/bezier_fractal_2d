@@ -51,7 +51,7 @@ size_t max_orbit_length = 0;
 
 float grid_max = 1.5;
 complex<float> C(0.2f, 0.5f); // For Julia set only
-unsigned short int max_iterations = 5000;
+unsigned short int max_iterations = 500;
 float threshold = 4.0;
 float beta = 2.0f;
 bool mandelbrot_mode = true;
@@ -589,7 +589,7 @@ const float exponent)
 		colours.push_back(r);
 
 		Curve* curve = new CatmullRom();
-		curve->set_steps(10);
+		curve->set_steps(100);
 
 		for (size_t j = 0; j < all_4d_points[i].size(); j++)
 			curve->add_way_point(Vector(all_4d_points[i][j].x, all_4d_points[i][j].y, 0));
@@ -625,7 +625,7 @@ const float exponent)
 	 get_isosurface(
 		mandelbrot,
 		grid_max,
-		10,
+		1000,
 		C,
 		max_iterations,
 		threshold,
@@ -1333,8 +1333,8 @@ void draw_objects(bool disable_colouring)
 		for (size_t i = 0; i < pos.size(); i++)
 		{
 
-//			if (true == is_cycle[i])
-	//			continue;
+			//if (true == is_cycle[i])
+			//	continue;
 
 			for (size_t j = 0; j < pos[i].size() - 1; j++)
 			{
@@ -1374,6 +1374,35 @@ void draw_objects(bool disable_colouring)
 		//}
 
 		//cout << endl;
+
+
+
+
+		//for (size_t i = 0; i < all_4d_points.size(); i++)
+		//{
+
+		//	if (true == is_cycle[i])
+		//		continue;
+
+		//	for (size_t j = 0; j < all_4d_points[i].size(); j++)
+		//	{
+		//		glPushMatrix();
+
+
+		//				RGB rgb = HSBtoRGB(static_cast<unsigned short>(330.0f), 75, 100);
+
+		//				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
+
+		//				glMaterialfv(GL_FRONT, GL_DIFFUSE, colour);
+
+		//		glTranslatef(all_4d_points[i][j].x, all_4d_points[i][j].y, all_4d_points[i][j].z);
+
+		//		
+		//		glutSolidSphere(0.005, 8, 8);
+
+		//		glPopMatrix();
+		//	}
+		//}
 
 
 
