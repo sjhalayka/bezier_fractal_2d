@@ -51,7 +51,7 @@ size_t max_orbit_length = 0;
 
 float grid_max = 1.5;
 complex<float> C(0.2f, 0.5f); // For Julia set only
-unsigned short int max_iterations = 5000;
+unsigned short int max_iterations = 500;
 float threshold = 4.0;
 float beta = 2.0f;
 bool mandelbrot_mode = true;
@@ -177,7 +177,7 @@ iterator_return_values iterate_mandelbrot_2d(vector< complex<float> >& trajector
 	const float threshold,
 	const float exponent)
 {
-	C = complex<float>(-0.1258695628494024, 0.7545827310532331);// Z;
+	C = Z;// complex<float>(-0.1258695628494024, 0.7545827310532331);// Z;
 	Z = complex<float>(0, 0);
 
 	trajectory_points.clear();
@@ -522,74 +522,78 @@ const float exponent)
 
 	is_cycle.resize(all_4d_points.size(), false);
 
-	for (size_t i = 0; i < all_4d_points.size(); i++)
-	{
-		set<vector_4> point_set;
+	//for (size_t i = 0; i < all_4d_points.size(); i++)
+	//{
+	//	set<vector_4> point_set;
 
-		for (size_t j = 0; j < all_4d_points[i].size(); j++)
-			point_set.insert(all_4d_points[i][j]);
+	//	for (size_t j = 0; j < all_4d_points[i].size(); j++)
+	//		point_set.insert(all_4d_points[i][j]);
 
-		if (point_set.size() != all_4d_points[i].size())
-		{
-			is_cycle[i] = true;
+	//	if (point_set.size() != all_4d_points[i].size())
+	//	{
+	//		is_cycle[i] = true;
 
-			if(point_set.size() > 1)
-			all_4d_points[i].erase(all_4d_points[i].begin(), all_4d_points[i].begin() + (all_4d_points[i].size() / 10 + 1));// push_back(all_4d_points[i][0]);
-			orbit_count++;
-		}
+	//		if(point_set.size() > 1)
+	//		all_4d_points[i].erase(all_4d_points[i].begin(), all_4d_points[i].begin() + (all_4d_points[i].size() / 10 + 1));// push_back(all_4d_points[i][0]);
+	//		orbit_count++;
+	//	}
 
-		
-	}
-
-
-	
-	
-	cout << "orbit count " << orbit_count << endl;
+	//	
+	//}
 
 
-	for (size_t i = 0; i < all_4d_points.size(); i++)
-	{
-		vector<vector_4> new_points;
-
-		for (size_t j = 0; j < all_4d_points[i].size(); j++)
-			if (std::find(new_points.begin(), new_points.end(), all_4d_points[i][j]) == new_points.end())
-				new_points.push_back(all_4d_points[i][j]);
-
-		//new_points.push_back(new_points[0]);
-
-		//sort(new_points.begin(), new_points.end());
-
-	//	cout << endl;
-	//	cout << endl;
-
-	//	cout << all_4d_points[i].size() << endl;
-		all_4d_points[i] = new_points;
-	//	cout << all_4d_points[i].size() << endl;
-	//	cout << endl;
-
-		if (all_4d_points[i].size() > max_orbit_length)
-			max_orbit_length = all_4d_points[i].size();
-	}
-
-	cout << "trajectory count " << all_4d_points.size() << endl;
+	//
+	//
+	//cout << "orbit count " << orbit_count << endl;
 
 
+	//for (size_t i = 0; i < all_4d_points.size(); i++)
+	//{
+	//	vector<vector_4> new_points;
+
+	//	for (size_t j = 0; j < all_4d_points[i].size(); j++)
+	//		if (std::find(new_points.begin(), new_points.end(), all_4d_points[i][j]) == new_points.end())
+	//			new_points.push_back(all_4d_points[i][j]);
+
+	//	//new_points.push_back(new_points[0]);
+
+	//	//sort(new_points.begin(), new_points.end());
+
+	////	cout << endl;
+	////	cout << endl;
+
+	////	cout << all_4d_points[i].size() << endl;
+	//	all_4d_points[i] = new_points;
+	////	cout << all_4d_points[i].size() << endl;
+	////	cout << endl;
+
+	//	if (all_4d_points[i].size() > max_orbit_length)
+	//		max_orbit_length = all_4d_points[i].size();
+	//}
+
+	//cout << "trajectory count " << all_4d_points.size() << endl;
 
 
 
+
+	srand(321);
 
 
 	for (size_t i = 0; i < all_4d_points.size(); i++)
 	{
 		RGB r;
-		r.r = rand() % 256;
+		r.r = 255;// rand() % 256;
 		r.g = rand() % 256;
 		r.b = rand() % 256;
 
 		colours.push_back(r);
 
 		Curve* curve = new CatmullRom();
-		curve->set_steps(10);
+
+	//	if (screenshot_mode)
+			curve->set_steps(100);
+	//	else
+	//		curve->set_steps(5);
 
 		for (size_t j = 0; j < all_4d_points[i].size(); j++)
 			curve->add_way_point(Vector(all_4d_points[i][j].x, all_4d_points[i][j].y, 0));
@@ -625,7 +629,7 @@ const float exponent)
 	 get_isosurface(
 		mandelbrot,
 		grid_max,
-		10,
+		1000,
 		C,
 		max_iterations,
 		threshold,
@@ -1342,10 +1346,12 @@ void draw_objects(bool disable_colouring)
 				double t = j / static_cast<double>(pos[i].size() - 1);
 
 				// float t = static_cast<float>(pos[i].size()) / static_cast<float>(max_iterations);
-
+				 
 				//float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_iterations);
 
-				RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
+				//RGB rgb = HSBtoRGB(static_cast<unsigned short>(300.f * t), 75, 100);
+				RGB rgb = colours[i];
+
 
 				float colour[] = { rgb.r / 255.0f, rgb.g / 255.0f, rgb.b / 255.0f, 1.0f };
 
@@ -1388,10 +1394,13 @@ void draw_objects(bool disable_colouring)
 			//	//cout << endl;
 			//	continue;
 			//}
-
+			
+			/*
 			for (size_t j = 0; j < all_4d_points[i].size() - 1; j++)
 			{
-				float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_iterations);
+				double t = j / static_cast<double>(all_4d_points[i].size() - 1);
+
+				//float t = static_cast<float>(all_4d_points[i].size()) / static_cast<float>(max_iterations);
 
 				//t = pow(t, 2.0);
 
@@ -1406,6 +1415,7 @@ void draw_objects(bool disable_colouring)
 			
 			if(is_cycle[i])
 				draw_line(all_4d_points[i][all_4d_points[i].size() - 1], all_4d_points[i][0], false);
+			*/
 		}
 	}
 
